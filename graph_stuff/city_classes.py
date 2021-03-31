@@ -2,31 +2,31 @@
 """
 
 from __future__ import annotations
-from typing import Any
 from pygame_stuff.drawing import Drawable
 
 import pygame
 import math
+import hashlib
 
 
 class _Place(Drawable):
     """A vertex in the City graph, used to represent a place in the city.
 
     Instance Attributes:
-        - pos: The coordinates of this place
-        - name: The name of this place
+        - pos: The coordinates of the place
+        - name: The unique id of the place
         - neighbours: The vertices that are adjacent to this vertex and their respective distances
     """
-    name: str
-    pos:  tuple[int, int]
+    id: str
+    pos:  tuple[float, float]
     neighbours: dict[_Place, float]
 
-    def __init__(self, name: str, x: int, y: int) -> None:
+    def __init__(self, name: str, pos: tuple[float, float]) -> None:
         self.name = name
-        self.pos = (x, y)
+        self.pos = pos
         self.neighbours = dict()
 
-    def draw(self, screen: pygame.screen) -> None:
+    def draw(self, screen: pygame.Surface) -> None:
         """Draws this item within the pygame window
         """
         # TODO
@@ -47,7 +47,7 @@ class _Intersection(_Place):
         self.traffic_light = traffic_light
         self.stop_time = stop_time
 
-    def draw(self, screen: pygame.screen) -> None:
+    def draw(self, screen: pygame.Surface) -> None:
         """Draws this item within the pygame window
         """
         # TODO
@@ -57,29 +57,30 @@ class City:
     """A graph used to represent a city's road network
 
     Instance Attributes:
-        - traffic_light: 0 for a green light, 1 for a red light
-        - stop_time: The average stop time (in seconds) for a red light
+        - _places: All the the places in the city
+        - _positions: Dictionary of coordinate: _Place pairs in the city
     """
-    _places: dict[Any, _Place]
-    # population: int
+    _places: dict[tuple[float, float], _Place]
 
     def __init__(self) -> None:
         self._places = dict()
 
-    def add_place(self, name: str, x: int, y: int) -> None:
+    def add_place(self, pos: tuple[float, float]) -> None:
         """Add a _Place to the dictionary with the same coordinates as the mouse click
         """
-        if name not in self._places:
-            self._places[name] = _Place(name, x, y)
+        if pos not in self._places:
+            place_id = hashlib.md5(f'{pos}'.encode('utf-8')).hexdigest()
+            p = _Place(place_id, pos)
+            self._places.update({pos: p})
 
-    def add_street(self, name1: str, name2: str) -> None:
+    def add_street(self, pos1: tuple, pos2: tuple) -> None:
         """Connect two _Places together with a street
 
         Raise a ValueError if either name do not appear as places in the city.
         """
-        if name1 in self._places and name2 in self._places:
-            p1 = self._places[name1]
-            p2 = self._places[name2]
+        if pos1 in self._places and pos2 in self._places:
+            p1 = self._places[pos1]
+            p2 = self._places[pos2]
 
             # Calculating distance between two points
             x_squared = (p1.pos[0] - p2.pos[0])**2
@@ -92,24 +93,24 @@ class City:
             raise ValueError
             # maybe change to warning message in pygame
 
-    def get_neighbours(self, name: str) -> set:
-        """Return a set of the neighbours (the names) of the given name.
+    def get_neighbours(self, pos: tuple[float, float]) -> set:
+        """Return a set of the neighbours (the names) of the at the given position.
 
         Raise a ValueError if name does not appear as a place in this city.
         """
-        if name in self._places:
-            p = self._places[name]
-            return {neighbour.name for neighbour in p.neighbours}
+        if pos in self._places:
+            p = self._places[pos]
+            return {neighbour.pos for neighbour in p.neighbours}
         else:
             raise ValueError
 
-    def adjacent(self, name1: str, name2: str) -> bool:
-        """Return if name1 and name2 are adjacent places in this city.
+    def adjacent(self, pos1: tuple[float, float], pos2: tuple[float, float]) -> bool:
+        """Return if places at pos1 and pos2 are adjacent in this city.
 
         Return False if name1 or name2 do not appear as places in this city.
         """
-        if name1 in self._places and name2 in self._places:
-            p1 = self._places[name1]
-            return any(v2.name == name2 for v2 in p1.neighbours)
+        if pos1 in self._places and pos2 in self._places:
+            p1 = self._places[pos1]
+            return any(p2.pos == pos2 for p2 in p1.neighbours)
         else:
             return False
