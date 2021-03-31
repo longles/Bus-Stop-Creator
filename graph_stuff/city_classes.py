@@ -57,8 +57,7 @@ class City:
     """A graph used to represent a city's road network
 
     Instance Attributes:
-        - _places: All the the places in the city
-        - _positions: Dictionary of coordinate: _Place pairs in the city
+        - _places: Dictionary of coordinate: place pairs in the city
     """
     _places: dict[tuple[float, float], _Place]
 
