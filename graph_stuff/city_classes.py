@@ -14,15 +14,15 @@ class _Place(Drawable):
 
     Instance Attributes:
         - pos: The coordinates of the place
-        - name: The unique id of the place
+        - uid: The unique identifier of the place
         - neighbours: The vertices that are adjacent to this vertex and their respective distances
     """
-    id: str
+    uid: str
     pos:  tuple[float, float]
     neighbours: dict[_Place, float]
 
-    def __init__(self, name: str, pos: tuple[float, float]) -> None:
-        self.name = name
+    def __init__(self, uid: str, pos: tuple[float, float]) -> None:
+        self.uid = uid
         self.pos = pos
         self.neighbours = dict()
 
@@ -42,8 +42,8 @@ class _Intersection(_Place):
     traffic_light: int
     stop_time: float
 
-    def __init__(self, name: str, x: int, y: int, traffic_light: int, stop_time: int) -> None:
-        super().__init__(name, x, y)
+    def __init__(self, uid: str, pos, traffic_light: int, stop_time: int) -> None:
+        super().__init__(uid, pos)
         self.traffic_light = traffic_light
         self.stop_time = stop_time
 
@@ -69,8 +69,9 @@ class City:
         """Add a _Place to the dictionary with the same coordinates as the mouse click
         """
         if pos not in self._places:
-            place_id = hashlib.md5(f'{pos}'.encode('utf-8')).hexdigest()
-            p = _Place(place_id, pos)
+            # generates a random string for the id
+            uid = hashlib.md5(f'{pos}'.encode('utf-8')).hexdigest()
+            p = _Place(uid, pos)
             self._places.update({pos: p})
 
     def add_street(self, pos1: tuple, pos2: tuple) -> None:
