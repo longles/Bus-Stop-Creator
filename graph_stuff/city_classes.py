@@ -99,7 +99,7 @@ class City:
         """Remove a place from the city and remove all streets connecting to it"""
         # TODO
 
-    def delete_street(self, pos1: tuple[float, float], pos2):
+    def delete_street(self, pos1: tuple[float, float], pos2: tuple[float, float]):
         """Remove a street between two places"""
         # TODO
 
