@@ -57,17 +57,19 @@ class City:
 
     Instance Attributes:
         - _places: Dictionary of coordinate: place pairs in the city
+        - _streets: Set of coordinate pairs which define a street
     """
-    _places: dict[tuple[float, float], _Place]
+    _places: dict[tuple, _Place]
+    _streets: set[tuple]
 
     def __init__(self) -> None:
         self._places = dict()
+        self._streets = set()
 
     def add_place(self, pos: tuple[float, float]) -> None:
         """Add a _Place to the dictionary with the same coordinates as the mouse click
         """
         if pos not in self._places:
-            # generates a random string for the id
             p = _Place(pos)
             self._places.update({pos: p})
 
@@ -87,9 +89,19 @@ class City:
 
             p1.neighbours.update({p2: dist})
             p2.neighbours.update({p1: dist})
+
+            self._streets.add((pos1, pos2))
         else:
             raise ValueError
             # maybe change to warning message in pygame
+
+    def delete_place(self, pos: tuple[float, float]):
+        """Remove a place from the city and remove all streets connecting to it"""
+        # TODO
+
+    def delete_street(self, pos1: tuple[float, float], pos2):
+        """Remove a street between two places"""
+        # TODO
 
     def get_neighbours(self, pos: tuple[float, float]) -> set:
         """Return a set of the neighbours (the names) of the at the given position.
@@ -115,17 +127,6 @@ class City:
         p2 = self._places[pos2]
         return p1.neighbours.get(p2, 0)
 
-    def adjacent(self, pos1: tuple[float, float], pos2: tuple[float, float]) -> bool:
-        """Return if places at pos1 and pos2 are adjacent in this city.
-
-        Return False if name1 or name2 do not appear as places in this city.
-        """
-        if pos1 in self._places and pos2 in self._places:
-            p1 = self._places[pos1]
-            return any(p2.pos == pos2 for p2 in p1.neighbours)
-        else:
-            return False
-
     def shortest_path(self, start: tuple[float, float], end: tuple[float, float]) \
             -> Union[tuple[list, float], None]:
         """Returns a list containing the shortest path between 'start' and 'end' and the total
@@ -146,6 +147,8 @@ class City:
 
         while end in unvisited:
             curr = min(unvisited, key=lambda place: distances[place])
+
+            # if the smallest value is inf, then there is no path
             if distances[curr] == float('inf'):
                 break
 
