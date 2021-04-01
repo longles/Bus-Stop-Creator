@@ -149,28 +149,28 @@ class City:
             if distances[curr] == float('inf'):
                 break
 
-            for neighbour in self._places[curr].neighbours:
-                if neighbour.pos not in visited:
-                    new_dist = distances[curr] + self.get_distance(curr, neighbour.pos)
+            for neighbour in self.get_neighbours(curr):
+                if neighbour not in visited:
+                    new_dist = distances[curr] + self.get_distance(curr, neighbour)
 
-                    if new_dist < distances[neighbour.pos]:
-                        distances[neighbour.pos] = new_dist
-                        predecessor[neighbour.pos] = curr
+                    if new_dist < distances[neighbour]:
+                        distances[neighbour] = new_dist
+                        predecessor[neighbour] = curr
 
             visited.add(curr)
             unvisited.remove(curr)
 
         # prints the shortest path in the form of a list
         shortest_path = []
-        current = end
-        if current not in predecessor:
-            predecessor[current] = None
+        curr = end
+        if curr not in predecessor:
+            predecessor[curr] = None
 
-        while predecessor[current] is not None:
-            shortest_path.insert(0, current)
-            current = predecessor[current]
+        while predecessor[curr] is not None:
+            shortest_path.insert(0, curr)
+            curr = predecessor[curr]
         if shortest_path != []:
-            shortest_path.insert(0, current)
+            shortest_path.insert(0, curr)
         else:
             return None
 
