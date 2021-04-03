@@ -57,9 +57,6 @@ class City:
     Instance Attributes:
         - _places: Dictionary of coordinate: place pairs in the city
         - _streets: Set of coordinate pairs which define a street
-
-    To have a set of sets, we must use python's frozenset. This is a set that is immutable. Using
-    set for coordinate pairs removes the need to check for permuations of (p1, p2)
     """
     _places: dict[tuple, _Place]
     _streets: set[tuple]
@@ -77,7 +74,6 @@ class City:
 
     def add_street(self, pos1: tuple, pos2: tuple) -> None:
         """Connect two _Places together with a street
-
         Raise a ValueError if either name do not appear as places in the city.
         """
         if pos1 in self._places and pos2 in self._places:
@@ -123,7 +119,6 @@ class City:
 
     def get_neighbours(self, pos: tuple[float, float]) -> set:
         """Return a set of the neighbours (the names) of the at the given position.
-
         Raise a ValueError if name does not appear as a place in this city.
         """
         if pos in self._places:
