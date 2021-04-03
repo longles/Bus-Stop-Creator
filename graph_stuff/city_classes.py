@@ -9,7 +9,6 @@ import pygame
 import math
 
 
-
 class _Place(Drawable):
     """A vertex in the City graph, used to represent a place in the city.
 
@@ -58,6 +57,9 @@ class City:
     Instance Attributes:
         - _places: Dictionary of coordinate: place pairs in the city
         - _streets: Set of coordinate pairs which define a street
+
+    To have a set of sets, we must use python's frozenset. This is a set that is immutable. Using
+    set for coordinate pairs removes the need to check for permuations of (p1, p2)
     """
     _places: dict[tuple, _Place]
     _streets: set[tuple]
@@ -95,13 +97,29 @@ class City:
             raise ValueError
             # maybe change to warning message in pygame
 
-    def delete_place(self, pos: tuple[float, float]):
+    def delete_place(self, pos: tuple[float, float]) -> None:
         """Remove a place from the city and remove all streets connecting to it"""
-        # TODO
+        if pos in self._places:
+            p = self._places[pos]
+            neighbours_copy = p.neighbours.copy()
+            for neighbour in neighbours_copy:
+                self.delete_street(p.pos, neighbour.pos)
+            self._places.pop(pos)
 
-    def delete_street(self, pos1: tuple[float, float], pos2: tuple[float, float]):
+    def delete_street(self, pos1: tuple[float, float], pos2: tuple[float, float]) -> None:
         """Remove a street between two places"""
-        # TODO
+        if (pos1, pos2) in self._streets:
+            p1 = self._places[pos1]
+            p2 = self._places[pos2]
+            p1.neighbours.pop(p2)
+            p2.neighbours.pop(p1)
+            self._streets.remove((pos1, pos2))
+        elif (pos2, pos1) in self._streets:
+            p1 = self._places[pos1]
+            p2 = self._places[pos2]
+            p1.neighbours.pop(p2)
+            p2.neighbours.pop(p1)
+            self._streets.remove((pos2, pos1))
 
     def get_neighbours(self, pos: tuple[float, float]) -> set:
         """Return a set of the neighbours (the names) of the at the given position.
@@ -155,7 +173,6 @@ class City:
             for neighbour in self.get_neighbours(curr):
                 if neighbour not in visited:
                     new_dist = distances[curr] + self.get_distance(curr, neighbour)
-
                     if new_dist < distances[neighbour]:
                         distances[neighbour] = new_dist
                         predecessor[neighbour] = curr
@@ -172,6 +189,7 @@ class City:
         while predecessor[curr] is not None:
             shortest_path.insert(0, curr)
             curr = predecessor[curr]
+
         if shortest_path != []:
             shortest_path.insert(0, curr)
         else:
@@ -196,5 +214,5 @@ if __name__ == '__main__':
     toronto.add_street((0, 7), (0, 0))
     toronto.add_street((0, 0), (10, 15))
 
-    print('(0,0) -> (10, 15):', toronto.shortest_path((0, 0), (10, 15)))
+    print('(0, 0) -> (10, 15):', toronto.shortest_path((0, 0), (10, 15)))
     print('(3, 4) -> (9, 0):', toronto.shortest_path((3, 4), (9, 0)))
