@@ -2,11 +2,12 @@
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 import pandas as pd
+import random
 
 from city_classes import City
 
 
-def testing(lst: list, city: City, n_clusters: int):
+def testing(lst: set, city: City, n_clusters: int):
     for p in lst:
         city.add_place(p)
     temp = [list(x) for x in city.get_all_places()]
@@ -23,9 +24,7 @@ def testing(lst: list, city: City, n_clusters: int):
 
 
 if __name__ == '__main__':
-    coords = [(19, 15), (16, 12), (11, 12), (1, 13), (7, 13), (4, 3), (6, 5), (11, 9), (3, 13),
-              (9, 10), (2, 11), (8, 1), (18, 13), (16, 17), (3, 13), (7, 2), (17, 8), (18, 12),
-              (14, 13), (14, 10)]
+    coords = {(random.randint(0, 25), random.randint(0, 25)) for _ in range(50)}
     toronto = City()
     num_clusters = 5
     testing(coords, toronto, num_clusters)
