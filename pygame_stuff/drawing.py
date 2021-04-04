@@ -1,6 +1,17 @@
-"""This file contains the classes and functions used to draw the city with pygame"""
+""" CSC111 Final Project: Bus Stop Creator
+drawing.py
 
+================================================================================
+This file contains the class definitions and constants that will make drawing the city easier.
+  - Drawable
+================================================================================
+Copyright (c) 2021 Andy Wang, Varun Pillai, Ling Ai, Daniel Liu
+"""
 import pygame
+
+GRASS = (123, 168, 50)
+STREET = (59, 59, 59)
+PLACE = (117, 0, 0)
 
 
 class Drawable:

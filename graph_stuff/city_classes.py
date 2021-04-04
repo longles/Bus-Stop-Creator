@@ -1,8 +1,18 @@
-"""This file contains the class and methods used to represent a city's road network
+""" CSC111 Final Project: Bus Stop Creator
+city_classes.py
+
+================================================================================
+This file contains the class definitions for the objects needed to represent
+a city.
+  - City
+  - _Place
+  - _Intersection
+================================================================================
+Copyright (c) 2021 Andy Wang, Varun Pillai, Ling Ai, Daniel Liu
 """
 
 from __future__ import annotations
-from pygame_stuff.drawing import Drawable
+from pygame_stuff.drawing import *
 from typing import Union
 
 import pygame
@@ -13,12 +23,14 @@ class _Place(Drawable):
     """A vertex in the City graph, used to represent a place in the city.
 
     Instance Attributes:
-        - pos: The coordinates of the place
-        - uid: The unique identifier of the place
+        - pos: The coordinates of the CENTRE of the place
         - neighbours: The vertices that are adjacent to this vertex and their respective distances
+        - WIDTH: The width of this place in pixels, this place will be drawn as a square with
+                 side length WIDTH
     """
     pos:  tuple[float, float]
     neighbours: dict[_Place, float]
+    WIDTH: int = 20
 
     def __init__(self, pos: tuple[float, float]) -> None:
         self.pos = pos
@@ -27,7 +39,28 @@ class _Place(Drawable):
     def draw(self, screen: pygame.Surface) -> None:
         """Draws this item within the pygame window
         """
-        # TODO
+        x, y = self.pos
+        rect = pygame.Rect(x - self.WIDTH // 2, y - self.WIDTH // 2, self.WIDTH, self.WIDTH)
+        pygame.draw.rect(screen, PLACE, rect)
+
+    def pos_on_place(self, m_pos: tuple[int, int]) -> bool:
+        """
+        Return whether the given mouse position <m_pos> is on this place on the canvas.
+        """
+        x, y = self.pos  # x and y coords of this place's centre on the canvas
+
+        top_left_corner = (x - self.WIDTH // 2, y - self.WIDTH // 2)
+        bottom_right_corner = (x + self.WIDTH // 2, y + self.WIDTH // 2)
+
+        x1, y1 = top_left_corner
+        x2, y2 = bottom_right_corner
+
+        mx, my = m_pos
+
+        # See if m_pos is within the box bounded by top left and bottom right corners
+        if (x1 < mx < x2) and (y1 < my < y2):
+            return True
+        return False
 
 
 class _Intersection(_Place):
@@ -51,15 +84,19 @@ class _Intersection(_Place):
         # TODO
 
 
-class City:
+class City(Drawable):
     """A graph used to represent a city's road network
 
     Instance Attributes:
         - _places: Dictionary of coordinate: place pairs in the city
         - _streets: Set of coordinate pairs which define a street
+                    For example, ((x, y), (a, b)) is a single street that connects (x, y)
+                    to (a, b). This attribute is mainly used to facilitate drawing
+        - _STREET_WIDTH: The width of a street in pixels on the pygame window
     """
     _places: dict[tuple, _Place]
-    _streets: set[tuple]
+    _streets: set[tuple[tuple, tuple]]
+    _STREET_WIDTH: int = 10
 
     def __init__(self) -> None:
         self._places = dict()
@@ -74,9 +111,12 @@ class City:
 
     def add_street(self, pos1: tuple, pos2: tuple) -> None:
         """Connect two _Places together with a street
-        Raise a ValueError if either name do not appear as places in the city.
+        Raise a ValueError if either positions do not correspond to places in the city.
+
+        Preconditions:
+          - pos1 != pos2
         """
-        if pos1 in self._places and pos2 in self._places:
+        if (pos1 in self._places) and (pos2 in self._places):
             p1 = self._places[pos1]
             p2 = self._places[pos2]
 
@@ -88,6 +128,7 @@ class City:
             p1.neighbours.update({p2: dist})
             p2.neighbours.update({p1: dist})
 
+            # Duplicate streets are fine, since self._streets is a set anyway
             self._streets.add((pos1, pos2))
         else:
             raise ValueError
@@ -191,6 +232,34 @@ class City:
             return None
 
         return (shortest_path, distances[end])
+
+    def get_place_from_pos(self, m_pos: tuple[int, int]) -> Union[None, tuple[int, int]]:
+        """
+        Given the position of the mouse <pos>, return the POSITION of the place that the mouse
+        is on.
+        """
+        for place_pos in self._places:
+            place = self._places[place_pos]
+            if place.pos_on_place(m_pos):
+                return place_pos
+
+    def draw(self, screen: pygame.Surface) -> None:
+        """Draws this item within the pygame window
+        """
+        # Loop through the streets to draw them
+        for street in self._streets:
+            self._draw_street(street, screen)
+
+        # Loop through the places to draw them
+        for pos in self._places:
+            place = self._places[pos]
+            place.draw(screen)
+
+    def _draw_street(self, street: tuple[tuple, tuple], screen: pygame.Surface) -> None:
+        """
+        A helper method to draw a street (a line) between two positions on a screen.
+        """
+        pygame.draw.line(screen, STREET, street[0], street[1], self._STREET_WIDTH)
 
 
 if __name__ == '__main__':

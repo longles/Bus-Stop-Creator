@@ -1,7 +1,16 @@
-"""This file contains the classes and methods required to simulate the bus system
+""" CSC111 Final Project: Bus Stop Creator
+bus_classes.py
+
+================================================================================
+This file contains the class definitions for a bus stop and the route
+that a bus will take.
+  - Route
+  - _BusStop
+================================================================================
+Copyright (c) 2021 Andy Wang, Varun Pillai, Ling Ai, Daniel Liu
 """
 
-from graph_stuff.city_classes import _Place
+from city_classes import _Place
 
 
 class _BusStop:
