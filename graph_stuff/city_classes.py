@@ -14,9 +14,11 @@ Copyright (c) 2021 Andy Wang, Varun Pillai, Ling Ai, Daniel Liu
 from __future__ import annotations
 from pygame_stuff.drawing import *
 from typing import Union
+from sklearn.cluster import KMeans
 
 import pygame
 import math
+import pandas as pd
 
 
 class _Place(Drawable):
@@ -104,6 +106,10 @@ class City(Drawable):
         self._places = dict()
         self._streets = set()
 
+    # ========================================================
+    # Mutating instance attributes
+    # ========================================================
+
     def add_place(self, pos: tuple[float, float]) -> None:
         """Add a _Place to the dictionary with the same coordinates as the mouse click
         """
@@ -119,7 +125,8 @@ class City(Drawable):
             self._places.update({pos: p})
 
     def add_street(self, pos1: tuple, pos2: tuple) -> None:
-        """Connect two _Places together with a street
+        """
+        Connect two _Places together with a street
         Raise a ValueError if either positions do not correspond to places in the city.
 
         Preconditions:
@@ -144,7 +151,8 @@ class City(Drawable):
             # maybe change to warning message in pygame
 
     def delete_place(self, pos: tuple[float, float]) -> None:
-        """Remove a place from the city and remove all streets connecting to it"""
+        """Remove a place from the city and remove all streets connecting to it
+        """
         if pos in self._places:
             p = self._places[pos]
             neighbours_copy = p.neighbours.copy()
@@ -153,7 +161,8 @@ class City(Drawable):
             self._places.pop(pos)
 
     def delete_street(self, pos1: tuple[float, float], pos2: tuple[float, float]) -> None:
-        """Remove a street between two places"""
+        """Remove a street between two places
+        """
         if (pos1, pos2) in self._streets:
             p1 = self._places[pos1]
             p2 = self._places[pos2]
@@ -167,8 +176,13 @@ class City(Drawable):
             p2.neighbours.pop(p1)
             self._streets.remove((pos2, pos1))
 
+    # ========================================================
+    # Accessing instance attributes
+    # ========================================================
+
     def get_neighbours(self, pos: tuple[float, float]) -> set:
-        """Return a set of the neighbours (the names) of the at the given position.
+        """
+        Return a set of the neighbours (the names) of the at the given position.
         Raise a ValueError if name does not appear as a place in this city.
         """
         if pos in self._places:
@@ -183,16 +197,22 @@ class City(Drawable):
         return {p.pos for p in self._places.values()}
 
     def get_distance(self, pos1: tuple[float, float], pos2: tuple[float, float]) -> float:
-        """Return the distance between two neighbours
+        """
+        Return the distance between two neighbours
         Return 0 if they are not neighbours
         """
         p1 = self._places[pos1]
         p2 = self._places[pos2]
         return p1.neighbours.get(p2, 0)
 
+    # ========================================================
+    # Algorithms
+    # ========================================================
+
     def shortest_path(self, start: tuple[float, float], end: tuple[float, float]) \
             -> Union[tuple[list, float], None]:
-        """Returns a list containing the shortest path between 'start' and 'end' and the total
+        """
+        Returns a list containing the shortest path between 'start' and 'end' and the total
         distance between the two places
         """
         if start not in self._places or end not in self._places:
@@ -241,6 +261,22 @@ class City(Drawable):
             return None
 
         return (shortest_path, distances[end])
+
+    def get_bus_stops(self, n_clusters) -> set[tuple]:
+        """Return a set of bus stop coordinates calculated using KMeans clustering algorithm
+        """
+        temp = [list(x) for x in self.get_all_places()]
+        df = pd.DataFrame(temp)
+
+        km = KMeans(n_clusters=n_clusters, init='k-means++')
+        km.fit_predict(df)
+        centers = km.cluster_centers_
+
+        return set(map(tuple, centers))
+
+    # ========================================================
+    # Pygame interaction
+    # ========================================================
 
     def get_element_from_pos(self, m_pos: tuple[int, int]) -> \
             Union[None, tuple]:
@@ -304,27 +340,6 @@ class City(Drawable):
             place.draw(screen)
 
     def _draw_street(self, street: tuple[tuple, tuple], screen: pygame.Surface) -> None:
-        """
-        A helper method to draw a street (a line) between two positions on a screen.
+        """A helper method to draw a street (a line) between two positions on a screen.
         """
         pygame.draw.line(screen, STREET, street[0], street[1], self.STREET_WIDTH)
-
-
-if __name__ == '__main__':
-    toronto = City()
-
-    toronto.add_place((0, 0))
-    toronto.add_place((3, 4))
-    toronto.add_place((10, 15))
-    toronto.add_place((9, 0))
-    toronto.add_place((0, 7))
-
-    toronto.add_street((0, 0), (9, 0))
-    toronto.add_street((9, 0), (10, 15))
-    toronto.add_street((10, 15), (3, 4))
-    toronto.add_street((3, 4), (0, 7))
-    toronto.add_street((0, 7), (0, 0))
-    toronto.add_street((0, 0), (10, 15))
-
-    print('(0, 0) -> (10, 15):', toronto.shortest_path((0, 0), (10, 15)))
-    print('(3, 4) -> (9, 0):', toronto.shortest_path((3, 4), (9, 0)))
