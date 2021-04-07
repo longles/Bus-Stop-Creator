@@ -21,6 +21,7 @@ if __name__ == "__main__":
     running = True
     shift_down = False  # whether the left shift key is down
     ctrl_down = False  # whether the left control key is down
+    i_down = False  # whether the i key is being held down
 
     street_pair = []  # used for adding streets; keeps track of endpoints, resets for
     # every two pairs added
@@ -35,10 +36,10 @@ if __name__ == "__main__":
         running = not key[pygame.K_ESCAPE]
         shift_down = key[pygame.K_LSHIFT]
         ctrl_down = key[pygame.K_LCTRL]
+        i_down = key[pygame.K_i]
 
-        # Check for user input
+        # Check for user mouse input
         for event in pygame.event.get():
-            # TODO
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:  # Check for mouse click
@@ -46,9 +47,9 @@ if __name__ == "__main__":
                 mouse_pos = pygame.mouse.get_pos()
 
                 if shift_down:  # Shift click on two places to connect a street
-                    place_pos = city.get_place_from_pos(mouse_pos)
+                    place_pos, element_type = city.get_element_from_pos(mouse_pos)
 
-                    if place_pos is None:
+                    if place_pos is None or element_type != "Place":
                         continue
                     elif (place_pos not in street_pair) and (len(street_pair) == 0):
                         # street_pair is empty, add the first of the pair
@@ -59,15 +60,26 @@ if __name__ == "__main__":
                         street_pair.append(place_pos)
                         city.add_street(street_pair[0], street_pair[1])
                         street_pair = []
-
                 elif ctrl_down:  # Shift click on a place or a street to remove it
-                    print("Control")
-                    # TODO
+                    # This will be a tuple
+                    element_to_delete, element_type = city.get_element_from_pos(mouse_pos)
 
-                elif city.get_place_from_pos(mouse_pos) is None:
+                    if element_to_delete is None:
+                        continue
+                    elif element_type == "Place":
+                        city.delete_place(element_to_delete)
+                    else:
+                        city.delete_street(element_to_delete[0], element_to_delete[1])
+
+                elif city.get_element_from_pos(mouse_pos) == (None, None):
                     # Nothing is being held, so just add a place
                     # But do NOT add a place if the mouse is on top of an already existing place
-                    city.add_place(mouse_pos)
+
+                    # hold i to make an intersection
+                    if i_down:
+                        city.add_intersection(mouse_pos)
+                    else:
+                        city.add_place(mouse_pos)
 
                 # Only need to update the screen when something is added to the city
                 screen.fill(GRASS)  # background colour
