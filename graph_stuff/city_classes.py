@@ -144,11 +144,11 @@ class City(Drawable):
             p1.neighbours.update({p2: dist})
             p2.neighbours.update({p1: dist})
 
-            # Duplicate streets are fine, since self._streets is a set anyway
-            self._streets.add((pos1, pos2))
+            # Prevent duplicate streets: (a, b) = (b, a)
+            if (pos2, pos1) not in self._streets:
+                self._streets.add((pos1, pos2))
         else:
             raise ValueError
-            # maybe change to warning message in pygame
 
     def delete_place(self, pos: tuple[float, float]) -> None:
         """Remove a place from the city and remove all streets connecting to it
@@ -194,7 +194,7 @@ class City(Drawable):
     def get_all_places(self) -> set:
         """Return set of all place coordinates in the city
         """
-        return {p.pos for p in self._places.values()}
+        return {pos for pos in self._places}
 
     def get_distance(self, pos1: tuple[float, float], pos2: tuple[float, float]) -> float:
         """
@@ -231,7 +231,7 @@ class City(Drawable):
         while end in unvisited:
             curr = min(unvisited, key=lambda place: distances[place])
 
-            # if the smallest value is inf, then there is no path
+            # if the shortest distance is inf, then there is no path
             if distances[curr] == float('inf'):
                 break
 
