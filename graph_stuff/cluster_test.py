@@ -24,9 +24,9 @@ def testing(lst: set, city: City, n_clusters: int):
 
 
 if __name__ == '__main__':
-    coords = {(random.randint(0, 25), random.randint(0, 25)) for _ in range(50)}
+    coords = {(random.randint(0, 25), random.randint(0, 25)) for _ in range(10)}
     toronto = City()
-    num_clusters = 5
+    num_clusters = 3
     testing(coords, toronto, num_clusters)
 
 
