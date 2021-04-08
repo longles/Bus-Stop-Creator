@@ -19,6 +19,7 @@ from sklearn.cluster import KMeans
 import pygame
 import math
 import pandas as pd
+import numpy as np
 
 
 class _Place(Drawable):
@@ -136,10 +137,7 @@ class City(Drawable):
             p1 = self._places[pos1]
             p2 = self._places[pos2]
 
-            # Calculating distance between two points
-            x_squared = (p1.pos[0] - p2.pos[0])**2
-            y_squared = (p1.pos[1] - p2.pos[1])**2
-            dist = math.sqrt(x_squared + y_squared)
+            dist = self._dist(pos1, pos2)
 
             p1.neighbours.update({p2: dist})
             p2.neighbours.update({p1: dist})
@@ -206,7 +204,7 @@ class City(Drawable):
         return p1.neighbours.get(p2, 0)
 
     # ========================================================
-    # Algorithms
+    # Algorithms and utility
     # ========================================================
 
     def shortest_path(self, start: tuple[float, float], end: tuple[float, float]) \
@@ -261,6 +259,46 @@ class City(Drawable):
             return None
 
         return (shortest_path, distances[end])
+
+    def bus_stop_projected(self, bus_stop: tuple[float, float]) -> tuple[float, float]:
+        """
+        Return the coordinates of the bus stop projected onto the closet street
+                      Theoretical bus stop position
+                      C
+                      |
+                      |
+                A-----C----------B
+                      Bus stop on street
+        """
+        min_dist = float('inf')
+        curr_pos = bus_stop
+
+        for street in self._streets:
+            proj = self._proj(street[0], street[1], bus_stop)
+            dist = self._dist(bus_stop, proj)
+
+            if dist < min_dist:
+                min_dist = dist
+                curr_pos = proj
+
+        return curr_pos
+
+    def _proj(self, a, b, p) -> tuple[float, float]:
+        """Return the coordinates of the projection of point p onto line ab
+        """
+        ap = (p[0] - a[0], p[1] - a[1])
+        ab = (b[0] - a[0], b[1] - a[1])
+
+        t = (ap[0] * ab[0] + ap[1] * ab[1]) / (ab[0] ** 2 + ab[1] ** 2)
+        t = max(0, min(1, t))
+
+        temp = (t * ab[0], t * ab[1])
+        return (a[0] + temp[0], a[1] + temp[1])
+
+    def _dist(self, pos1: tuple[float, float], pos2: tuple[float, float]) -> float:
+        x_squared = (pos1[0] - pos2[0]) ** 2
+        y_squared = (pos1[1] - pos2[1]) ** 2
+        return math.sqrt(x_squared + y_squared)
 
     def get_bus_stops(self, n_clusters) -> set[tuple]:
         """Return a set of bus stop coordinates calculated using KMeans clustering algorithm
@@ -343,3 +381,6 @@ class City(Drawable):
         """A helper method to draw a street (a line) between two positions on a screen.
         """
         pygame.draw.line(screen, STREET, street[0], street[1], self.STREET_WIDTH)
+
+
+
