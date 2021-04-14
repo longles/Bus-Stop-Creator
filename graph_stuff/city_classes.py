@@ -509,13 +509,13 @@ class City(Drawable):
     # Algorithms
     # ========================================================
 
-    def shortest_path(self, start: tuple[float, float], end: tuple[float, float]) \
+    def dijkstra_path(self, start: tuple[float, float], end: tuple[float, float]) \
             -> Union[tuple[list, float], None]:
         """
         Returns a list containing the shortest path between 'start' and 'end' and the total
         distance between the two places
 
-        Based on the Dijkstra’s Shortest Path Algorithm
+        Based on the Dijkstra’s Shortest Path Algorithm (which is a special case of A*)
         """
         if (start not in self._places and start not in self._bus_stops[0]) or \
                 (end not in self._places and end not in self._bus_stops[0]):
@@ -530,6 +530,7 @@ class City(Drawable):
         distances[start] = 0
 
         predecessor = {place: None for place in unvisited}
+
         while end in unvisited:
             curr = min(unvisited, key=lambda place: distances[place])
 
@@ -540,6 +541,71 @@ class City(Drawable):
                 if neighbour not in visited:
                     new_dist = distances[curr] + self.get_distance(curr, neighbour)
                     if new_dist < distances[neighbour]:
+                        distances[neighbour] = new_dist
+                        predecessor[neighbour] = curr
+
+            visited.add(curr)
+            unvisited.remove(curr)
+
+        # Printing the shortest path in the form of a list
+        shortest_path = []
+        curr = end
+        if curr not in predecessor:
+            predecessor[curr] = None
+
+        while predecessor[curr] is not None:
+            shortest_path.insert(0, curr)
+            curr = predecessor[curr]
+
+        if shortest_path != []:
+            shortest_path.insert(0, curr)
+        else:
+            return None
+
+        return (shortest_path, distances[end])
+
+    def a_star_path(self, start: tuple[float, float], end: tuple[float, float]) \
+            -> Union[tuple[list, float], None]:
+        """
+        Returns a list containing the shortest path between 'start' and 'end' and the total
+        distance between the two places
+
+        Based on the A* Shortest Path Algorithm
+
+        The heuristic function for this algorithm is the Manhattan distance between the current
+        node and the end
+        """
+        if (start not in self._places and start not in self._bus_stops[0]) or \
+                (end not in self._places and end not in self._bus_stops[0]):
+            raise ValueError
+        if start == end:
+            return ([], 0)
+
+        visited = set()
+        unvisited = self.get_all_places().union(self.get_all_bus_stops())
+
+        costs = {place: float('inf') for place in unvisited}
+        costs[start] = 0
+
+        distances = {place: float('inf') for place in unvisited}
+        distances[start] = 0
+
+        predecessor = {place: None for place in unvisited}
+
+        while end in unvisited:
+            curr = min(unvisited, key=lambda place: costs[place])
+
+            # If the shortest distance is inf, then there is no path
+            if curr == end:
+                break
+
+            for neighbour in self.get_neighbours(curr):
+                if neighbour not in visited:
+                    new_cost = costs[curr] + self.get_distance(curr, neighbour) \
+                               + manhattan(curr, end)
+                    if new_cost < costs[neighbour]:
+                        new_dist = distances[curr] + self.get_distance(curr, neighbour)
+                        costs[neighbour] = new_cost
                         distances[neighbour] = new_dist
                         predecessor[neighbour] = curr
 

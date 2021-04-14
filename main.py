@@ -58,6 +58,7 @@ def run_visualization(map_file: str = "data/map.txt",
         ctrl_down = key[pygame.K_LCTRL]
         i_down = key[pygame.K_i]
         s_down = key[pygame.K_s]
+        d_down = key[pygame.K_d]
 
         path = []
 
@@ -95,6 +96,7 @@ def run_visualization(map_file: str = "data/map.txt",
                     else:
                         city.delete_street(element_to_delete[0], element_to_delete[1])
 
+                # DIJKSTRA PATHFINDING
                 elif s_down:  # s + click to get the shortest path between two places
                     place_pos, element_type = city.get_element_from_pos(mouse_pos)
 
@@ -107,7 +109,25 @@ def run_visualization(map_file: str = "data/map.txt",
                         # street_pair will have two elements, completing a pair
                         # Find the shortest path and reset street_pair
                         street_pair.append(place_pos)
-                        path, _ = city.shortest_path(street_pair[0], street_pair[1])
+                        path, d = city.dijkstra_path(street_pair[0], street_pair[1])
+                        print(d)
+                        street_pair = []
+
+                # A* PATHFINDING
+                elif d_down:  # d + click to get the 'shortest' path between two places
+                    place_pos, element_type = city.get_element_from_pos(mouse_pos)
+
+                    if place_pos is None or element_type == "Street":
+                        continue
+                    elif (place_pos not in street_pair) and (len(street_pair) == 0):
+                        # street_pair is empty, add the first of the pair
+                        street_pair.append(place_pos)
+                    elif (place_pos not in street_pair) and (len(street_pair) == 1):
+                        # street_pair will have two elements, completing a pair
+                        # Find the shortest path and reset street_pair
+                        street_pair.append(place_pos)
+                        path, d = city.a_star_path(street_pair[0], street_pair[1])
+                        print(d)
                         street_pair = []
 
                 elif city.get_element_from_pos(mouse_pos) == (None, None):

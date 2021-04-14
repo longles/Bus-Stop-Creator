@@ -46,12 +46,18 @@ def projection(a, b, p) -> tuple[float, float]:
 
 
 def distance(pos1: tuple[float, float], pos2: tuple[float, float]) -> float:
-    """Return the euclidean distance between two coordinates
+    """Return the Euclidean distance between two coordinates
     """
     x_squared = (pos1[0] - pos2[0]) ** 2
     y_squared = (pos1[1] - pos2[1]) ** 2
 
     return math.sqrt(x_squared + y_squared)
+
+
+def manhattan(pos1: tuple[float, float], pos2: tuple[float, float]) -> float:
+    """Return the Manhattan distance between two coordinates
+    """
+    return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
 
 
 # ========================================================
