@@ -12,6 +12,8 @@ import pygame
 GRASS = (123, 168, 50)
 STREET = (59, 59, 59)
 PLACE = (117, 0, 0)
+BUS_STOP = (255, 255, 0)
+HIGHLIGHTED_STREET = (153, 0, 76)
 
 
 class Drawable:
