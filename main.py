@@ -6,8 +6,11 @@ This is the main file to run the program. This will launch an interactive
 pygame screen.
 ================================================================================
 Copyright (c) 2021 Andy Wang, Varun Pillai, Ling Ai, Daniel Liu
+
+city = City.build_from_file("data/map.txt", "data/bus.txt")
+city.shortest_path((437,256), (609,273))
 """
-import pygame
+# import pygame
 from graph_stuff.city_classes import *
 from pygame_stuff.drawing import *
 
@@ -61,6 +64,9 @@ def run_visualization(map: str = "data/map.txt",
         shift_down = key[pygame.K_LSHIFT]
         ctrl_down = key[pygame.K_LCTRL]
         i_down = key[pygame.K_i]
+        s_down = key[pygame.K_s]
+
+        path = []
 
         # Check for user mouse input
         for event in pygame.event.get():
@@ -94,6 +100,20 @@ def run_visualization(map: str = "data/map.txt",
                         city.delete_place(element_to_delete)
                     else:
                         city.delete_street(element_to_delete[0], element_to_delete[1])
+                elif s_down:
+                    place_pos, element_type = city.get_element_from_pos(mouse_pos)
+                    print("ur mom")
+                    if place_pos is None or element_type == "Street":
+                        continue
+                    elif (place_pos not in street_pair) and (len(street_pair) == 0):
+                        # street_pair is empty, add the first of the pair
+                        street_pair.append(place_pos)
+                    elif (place_pos not in street_pair) and (len(street_pair) == 1):
+                        # street_pair will have two elements, completing a pair
+                        # now find the shortest path and reset street_pair
+                        street_pair.append(place_pos)
+                        path, _ = city.shortest_path(street_pair[0], street_pair[1])
+                        street_pair = []
 
                 elif city.get_element_from_pos(mouse_pos) == (None, None):
                     # Nothing is being held, so just add a place
@@ -108,6 +128,10 @@ def run_visualization(map: str = "data/map.txt",
                 # Only need to update the screen when something is added to the city
                 screen.fill(GRASS)  # background colour
                 city.draw(screen)
+                if len(path) >= 2:
+                    for i in range(len(path)):
+                        if i != len(path) - 1:
+                            city.draw_highlighted_street((path[i], path[i + 1]), screen)
                 # The advantage of doing this is that the bus stops disappear when you modify
                 # the city, and that makes sense
 
@@ -115,6 +139,7 @@ def run_visualization(map: str = "data/map.txt",
                 if event.key == pygame.K_1 and pygame.K_b:
                     # press 'b1' to override existing bus stops and generate new ones
                     # TODO: add user choice for bus stop number
+                    k = city.get_bus_stops_num()
 
                     # Generate new bus stops by mutating the current city repeatedly
                     # (until we get the best inertia for the k means algorithm),
@@ -125,7 +150,7 @@ def run_visualization(map: str = "data/map.txt",
                     while True:
                         if counter == 5:
                             break
-                        temp_inertia = city.add_bus_stops(3)
+                        temp_inertia = city.add_bus_stops(k)
 
                         if math.isclose(temp_inertia, city.get_inertia()):
                             counter += 1

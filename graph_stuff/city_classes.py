@@ -20,11 +20,13 @@ from typing import Union
 from sklearn.cluster import KMeans
 
 import pygame
-import math
+# import math
 import random
 import pandas as pd
 import numpy as np
 import copy
+
+from utility_functions import *
 
 
 class _Place(Drawable):
@@ -121,10 +123,13 @@ class _BusStop(_Place):
         - wait_time: Time the bus takes at the bus stop
     """
     wait_time: float
+    neighbours: dict[_Place, float]
+    WIDTH: int = 20
 
     def __init__(self, pos: tuple[float, float]) -> None:
         # TODO: adjust the default values later on
         super().__init__(pos)
+        self.neighbours = dict()
         self.wait_time = random.randint(1, 5)
 
     def __str__(self) -> str:
@@ -142,6 +147,25 @@ class _BusStop(_Place):
         x, y = self.pos
         rect = pygame.Rect(x - self.WIDTH // 2, y - self.WIDTH // 2, self.WIDTH, self.WIDTH)
         pygame.draw.rect(screen, BUS_STOP, rect)
+
+    def pos_on_bustop(self, m_pos: tuple[int, int]) -> bool:
+        """
+        Return whether the given mouse position <m_pos> is on this bus stop on the canvas.
+        """
+        x, y = self.pos  # x and y coords of this place's centre on the canvas
+
+        top_left_corner = (x - self.WIDTH // 2, y - self.WIDTH // 2)
+        bottom_right_corner = (x + self.WIDTH // 2, y + self.WIDTH // 2)
+
+        x1, y1 = top_left_corner
+        x2, y2 = bottom_right_corner
+
+        mx, my = m_pos
+
+        # See if m_pos is within the box bounded by top left and bottom right corners
+        if (x1 < mx < x2) and (y1 < my < y2):
+            return True
+        return False
 
 
 class City(Drawable):
@@ -169,7 +193,6 @@ class City(Drawable):
         self._bus_stops = [dict(), -1.0]
         self._bus_routes = []
 
-
     # ========================================================
     # File I/O
     # ========================================================
@@ -182,6 +205,7 @@ class City(Drawable):
           - The input file is in the same format described in export_to_file
         """
         city = City()
+        calculate_inertia = False
 
         with open(map, 'r') as f:
             for line in f:
@@ -212,7 +236,7 @@ class City(Drawable):
                     # if its -1.0 it means the inertia hasn't been calculated yet
                     if float(parsed_line[1]) == -1.0:
                         # calculate the inertia
-                        print("inertia calculated")
+                        calculate_inertia = True
                     # otherwise save the inertia
                     else:
                         city.change_inertia(float(parsed_line[1]))
@@ -225,6 +249,11 @@ class City(Drawable):
                         x1, y1 = int(parsed_line[2 * i]), int(parsed_line[2 * i + 1])
                         route.append((x1, y1))
                     city.add_bus_route(route)
+
+        places = city.get_all_places()
+        centers = list(city._bus_stops[0].keys())
+        if calculate_inertia and len(places) != 0 and len(centers) != 0:
+            city.change_inertia(city.calculate_inertia(list(places), centers))
 
         return city
 
@@ -443,6 +472,9 @@ class City(Drawable):
         if pos in self._places:
             p = self._places[pos]
             return {neighbour.pos for neighbour in p.neighbours}
+        elif pos in self._bus_stops[0]:
+            p = self._bus_stops[0][pos]
+            return {neighbour.pos for neighbour in p.neighbours}
         else:
             raise ValueError
 
@@ -450,6 +482,11 @@ class City(Drawable):
         """Return set of all place coordinates in the city that is not a bus stop
         """
         return {pos for pos in self._places}
+
+    def get_all_bustops(self) -> set:
+        """Return set of all coordinates in the city that is a bus stop
+        """
+        return {pos for pos in self._bus_stops[0]}
 
     def get_distance(self, pos1: tuple[float, float], pos2: tuple[float, float]) -> float:
         """
@@ -481,27 +518,28 @@ class City(Drawable):
         """
         Returns a list containing the shortest path between 'start' and 'end' and the total
         distance between the two places
+
+        Based on the Dijkstra’s Shortest Path Algorithm
         """
-        if start not in self._places or end not in self._places:
+        if (start not in self._places and start not in self._bus_stops[0]) or \
+                (end not in self._places and end not in self._bus_stops[0]):
             raise ValueError
         if start == end:
             return ([], 0)
 
         visited = set()
-        unvisited = self.get_all_places()
+        unvisited = self.get_all_places().union(self.get_all_bustops())
 
-        distances = {place: float('inf') for place in self.get_all_places()}
+        distances = {place: float('inf') for place in unvisited}
         distances[start] = 0
 
-        predecessor = {place: None for place in self.get_all_places()}
-
+        predecessor = {place: None for place in unvisited}
         while end in unvisited:
             curr = min(unvisited, key=lambda place: distances[place])
 
             # if the shortest distance is inf, then there is no path
             if distances[curr] == float('inf'):
                 break
-
             for neighbour in self.get_neighbours(curr):
                 if neighbour not in visited:
                     new_dist = distances[curr] + self.get_distance(curr, neighbour)
@@ -511,7 +549,6 @@ class City(Drawable):
 
             visited.add(curr)
             unvisited.remove(curr)
-
         # prints the shortest path in the form of a list
         shortest_path = []
         curr = end
@@ -604,7 +641,38 @@ class City(Drawable):
         y_squared = (pos1[1] - pos2[1]) ** 2
         return math.sqrt(x_squared + y_squared)
 
-    def _get_bus_stops(self, n_clusters) -> list[list[tuple], list, list]:
+    def get_bus_stops_num(self) -> int:
+        """
+        Find the k value in which an "elbow" appears (where a large increase in the variation
+        of inertia is seen)
+        For more info, please look at https://www.youtube.com/watch?v=4b5d3muPQmA
+        """
+        k = 2
+        inertias = []
+        variation = []  # the variation
+        change_in_variation = []  # the change in variation
+        # (we want to find the largest change in variation)
+        while True:
+            inertias.append(self.add_bus_stops(k))
+            if len(inertias) >= 2:
+                variation.append(inertias[k - 2] - inertias[k - 3])
+            if len(variation) >= 2:
+                change_in_variation.append(variation[k - 3] - variation[k - 4])
+            l_max = local_max(change_in_variation)
+            if len(l_max) == 1:
+                # so now a local max is found; this must be the element in
+                # change_in_variation[len(change_in_variation) - 2]
+                # so naturally this change in variation corresponds to the
+                # difference in "variation of inertia of k = len(inertias) and inertia of
+                # k = len(inertias) - 1" and "variation of inertia of k = len(inertias) - 1
+                # and inertia of k = len(inertias) - 2", and so we return k = len(inertias) - 1
+                return len(inertias) - 1
+            elif k == 30:
+                # if no local max exist, return a default value
+                return 3
+            k += 1
+
+    def _get_bus_stops(self, n_clusters: int) -> list[list[tuple], list]:
         """Return a set of bus stop coordinates calculated using KMeans clustering algorithm
         """
 
@@ -614,12 +682,11 @@ class City(Drawable):
         km = KMeans(n_clusters=n_clusters, init='k-means++')
         km.fit_predict(df)
         centers = km.cluster_centers_
-        labels = km.labels_
 
         # km.inertia_ is the original inertia with the auto generated centroid
-        return [list(map(tuple, centers)), labels, temp]
+        return [list(map(tuple, centers)), temp]
 
-    def calculate_inertia(self, labels: list, place_coords: list, centers: list) -> float:
+    def calculate_inertia(self, place_coords: list, centers: list) -> float:
         """
         inertia is the within-cluster sum-of-squares.
         Its a measure of how far 'every point in a cluster' is from the center (another point)
@@ -630,20 +697,15 @@ class City(Drawable):
         streets (forming the projected centers), a new inertia has to be calculated for
         the new projected centers
 
-        - labels is (a list of) the indexes of the cluster each coordinate in place_coords
-            belongs to. So, if labels[0] == 1, then place_coords[0] belongs to cluster 1,
-            where cluster 1 is centers[1]
         - place_coords is a list of the coordinates of the places in self._places
-        - centers is a list of the centers of the len(centers) clusters formed by place_coords
-            using k-means algorithm (or mutated centers formed by _bus_stop_projected())
+        - centers is a list of the centers of the len(centers) clusters
         """
         inertia = 0.0
-        if labels != []:
-            for i in range(len(labels)):
-                distance = self._dist(tuple(place_coords[i]), centers[labels[i]])
-                inertia += distance**2
-        else:
-            print("no labels")
+        for e in range(len(place_coords)):
+            distances = []
+            for i in range(len(centers)):
+                distances.append(self._dist(tuple(place_coords[e]), centers[i]))
+            inertia += min(distances) ** 2
         return inertia
 
     def add_bus_stops(self, num: int) -> float:
@@ -660,7 +722,7 @@ class City(Drawable):
             projected_centers.append(projected_center)
 
         if () not in projected_centers:
-            return self.calculate_inertia(km_parameters[1], km_parameters[2], projected_centers)
+            return self.calculate_inertia(km_parameters[1], projected_centers)
         else:
             return -1.0
 
@@ -685,6 +747,12 @@ class City(Drawable):
             place = self._places[place_pos]
             if place.pos_on_place(m_pos):
                 return place_pos, "Place"
+
+        # Second see if the mouse is on a bus stop
+        for bus_pos in self._bus_stops[0]:
+            bus_stop = self._bus_stops[0][bus_pos]
+            if bus_stop.pos_on_place(m_pos):
+                return bus_pos, "Bus Stop"
 
         # If not a place, then check if it's on a street
         for street in self._streets:
@@ -734,3 +802,8 @@ class City(Drawable):
         """A helper method to draw a street (a line) between two positions on a screen.
         """
         pygame.draw.line(screen, STREET, street[0], street[1], self.STREET_WIDTH)
+
+    def draw_highlighted_street(self, street: tuple[tuple, tuple], screen: pygame.Surface) -> None:
+        """A helper method to draw a highlighted street (a line) between two positions on a screen.
+        """
+        pygame.draw.line(screen, HIGHLIGHTED_STREET, street[0], street[1], self.STREET_WIDTH)
