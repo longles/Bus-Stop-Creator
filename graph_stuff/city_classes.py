@@ -721,7 +721,6 @@ class City(Drawable):
             bus_stops_so_far.append((bus_stop_proj, target_street))
 
         for bus_stop_proj, target_street in bus_stops_so_far:
-
             if bus_stop_proj is not None and target_street is not None:
                 p1 = target_street[0]
                 p2 = target_street[1]
