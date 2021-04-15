@@ -120,13 +120,13 @@ def run_visualization(map_file: str = "data/map.txt",
                     if place_pos is None or element_type == "Street":
                         continue
                     elif (place_pos not in street_pair) and (len(street_pair) == 0):
-                        # street_pair is empty, add the first of the pair
+
                         street_pair.append(place_pos)
                     elif (place_pos not in street_pair) and (len(street_pair) == 1):
-                        # street_pair will have two elements, completing a pair
-                        # Find the shortest path and reset street_pair
                         street_pair.append(place_pos)
-                        path, d = city.a_star_path(street_pair[0], street_pair[1])
+                        # 3rd argument for a_star_path can be distance, manhattan or diagonal
+                        # from utility_functions.py (the heuristic)
+                        path, d = city.a_star_path(street_pair[0], street_pair[1], manhattan)
                         print(d)
                         street_pair = []
 

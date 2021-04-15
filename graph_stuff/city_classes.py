@@ -537,12 +537,12 @@ class City(Drawable):
             # If the shortest distance is inf, then there is no path
             if distances[curr] == float('inf'):
                 break
+
             for neighbour in self.get_neighbours(curr):
-                if neighbour not in visited:
-                    new_dist = distances[curr] + self.get_distance(curr, neighbour)
-                    if new_dist < distances[neighbour]:
-                        distances[neighbour] = new_dist
-                        predecessor[neighbour] = curr
+                new_dist = distances[curr] + self.get_distance(curr, neighbour)
+                if neighbour not in visited and new_dist < distances[neighbour]:
+                    distances[neighbour] = new_dist
+                    predecessor[neighbour] = curr
 
             visited.add(curr)
             unvisited.remove(curr)
@@ -564,16 +564,17 @@ class City(Drawable):
 
         return (shortest_path, distances[end])
 
-    def a_star_path(self, start: tuple[float, float], end: tuple[float, float]) \
-            -> Union[tuple[list, float], None]:
+    def a_star_path(self, start: tuple[float, float], end: tuple[float, float],
+                    heuristic: callable) -> Union[tuple[list, float], None]:
         """
         Returns a list containing the shortest path between 'start' and 'end' and the total
         distance between the two places
 
         Based on the A* Shortest Path Algorithm
 
-        The heuristic function for this algorithm is the Manhattan distance between the current
-        node and the end
+        The accuracy of this algorithm is heavily dependant on the heuristic function we use
+        and the structure of the graph. For example, if we use Manhattan distance as our heuristic,
+        A* will perform very well on a grid-based graph.
         """
         if (start not in self._places and start not in self._bus_stops[0]) or \
                 (end not in self._places and end not in self._bus_stops[0]):
@@ -587,27 +588,22 @@ class City(Drawable):
         costs = {place: float('inf') for place in unvisited}
         costs[start] = 0
 
-        distances = {place: float('inf') for place in unvisited}
-        distances[start] = 0
-
+        distances = {place: 0 for place in unvisited}
         predecessor = {place: None for place in unvisited}
 
         while end in unvisited:
             curr = min(unvisited, key=lambda place: costs[place])
 
-            # If the shortest distance is inf, then there is no path
-            if curr == end:
+            # If the smallest cost is inf, then there is no path
+            if costs[curr] == float('inf'):
                 break
 
             for neighbour in self.get_neighbours(curr):
-                if neighbour not in visited:
-                    new_cost = costs[curr] + self.get_distance(curr, neighbour) \
-                               + manhattan(curr, end)
-                    if new_cost < costs[neighbour]:
-                        new_dist = distances[curr] + self.get_distance(curr, neighbour)
-                        costs[neighbour] = new_cost
-                        distances[neighbour] = new_dist
-                        predecessor[neighbour] = curr
+                new_cost = costs[curr] + self.get_distance(curr, neighbour) + heuristic(curr, end)
+                if neighbour not in visited and new_cost < costs[neighbour]:
+                    costs[neighbour] = new_cost
+                    distances[neighbour] = distances[curr] + self.get_distance(curr, neighbour)
+                    predecessor[neighbour] = curr
 
             visited.add(curr)
             unvisited.remove(curr)
@@ -669,7 +665,6 @@ class City(Drawable):
             elif p1 in self._places and p2 in self._places:
                 # Round bus_stop_proj's coords for pygame
                 bus_stop_proj = (int(bus_stop_proj[0]), int(bus_stop_proj[1]))
-
                 self.add_bus_stop(bus_stop_proj)
                 self.delete_street(p1, p2)
                 self.add_street(p1, bus_stop_proj)
@@ -701,7 +696,6 @@ class City(Drawable):
             if len(l_max) == 1:
                 # So now a local max is found; this must be the element in
                 # change_in_variation[len(change_in_variation) - 2].
-
                 # Naturally this change in variation corresponds to the
                 # difference in "variation of inertia of k = len(inertias) and inertia of
                 # k = len(inertias) - 1" and "variation of inertia of k = len(inertias) - 1
