@@ -15,6 +15,8 @@ PLACE = (117, 0, 0)
 BUS_STOP = (255, 255, 0)
 HIGHLIGHTED_STREET = (153, 0, 76)
 
+WIDTH, HEIGHT = 1000, 800
+
 
 class Drawable:
     """An abstract class representing the drawable items in the pygame window"""

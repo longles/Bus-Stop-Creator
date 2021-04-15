@@ -14,21 +14,21 @@ city.shortest_path((437,256), (609,273))
 from graph_stuff.city_classes import *
 from pygame_stuff.drawing import *
 
-WIDTH, HEIGHT = 1000, 800
-
 
 def run_visualization(map_file: str = "data/map.txt",
                       bus_file: str = "data/bus.txt",
                       map_save: str = "data/map_save.txt",
-                      bus_save: str = "data/bus_save.txt") -> None:
+                      bus_save: str = "data/bus_save.txt",
+                      heuristic: callable = manhattan) -> None:
     """
     Run the interactive city builder. If <input_file> != "", import the city from the file.
 
-    Refer to README.md for a comprehensive list of controls.
+    Refer to the project report for a full list of controls.
 
     Preconditions:
       - input_file and output_file, if specified, are .txt files in the data folder
       - input_file must exist if specified
+      - heuristic must be distance, manhattan or diagonal from utility_functions.py
     """
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -110,7 +110,13 @@ def run_visualization(map_file: str = "data/map.txt",
                         # Find the shortest path and reset street_pair
                         street_pair.append(place_pos)
                         path, d = city.dijkstra_path(street_pair[0], street_pair[1])
-                        print(d)
+
+                        print('Dijkstra pathfinding:')
+                        if isinstance(d, str):
+                            print(d)
+                        else:
+                            print(f'\tDistance from {street_pair[0]} '
+                                  f'to {street_pair[1]} = {10 * d}m')
                         street_pair = []
 
                 # A* PATHFINDING
@@ -120,14 +126,17 @@ def run_visualization(map_file: str = "data/map.txt",
                     if place_pos is None or element_type == "Street":
                         continue
                     elif (place_pos not in street_pair) and (len(street_pair) == 0):
-
                         street_pair.append(place_pos)
                     elif (place_pos not in street_pair) and (len(street_pair) == 1):
                         street_pair.append(place_pos)
-                        # 3rd argument for a_star_path can be distance, manhattan or diagonal
-                        # from utility_functions.py (the heuristic)
-                        path, d = city.a_star_path(street_pair[0], street_pair[1], manhattan)
-                        print(d)
+                        path, d = city.a_star_path(street_pair[0], street_pair[1], heuristic)
+
+                        print('A* pathfinding:')
+                        if isinstance(d, str):
+                            print(d)
+                        else:
+                            print(f'\tDistance from {street_pair[0]} '
+                                  f'to {street_pair[1]} = {10 * d}m')
                         street_pair = []
 
                 elif city.get_element_from_pos(mouse_pos) == (None, None):
