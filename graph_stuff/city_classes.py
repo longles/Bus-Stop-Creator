@@ -17,14 +17,13 @@ city.export_to_file("data/map_save.txt", "data/bus_save.txt")
 from __future__ import annotations
 from typing import Union
 
+import copy
+import pygame
+import pandas as pd
+
+from sklearn.cluster import KMeans
 from pygame_stuff.drawing import *
 from utility_functions import *
-from sklearn.cluster import KMeans
-
-import pygame
-import random
-import pandas as pd
-import copy
 
 
 class _Place(Drawable):
@@ -85,24 +84,11 @@ class _Place(Drawable):
 
 
 class _Intersection(_Place):
-    """A vertex in the City graph, used to represent a road intersection in the city.
-
-    Instance Attributes:
-        - traffic_light: 0 for a green light, 1 for a red light
-        - stop_time: The average stop time (in seconds) for a red light
-
-    Representation Invariants:
-        # TODO
+    """A vertex in the City graph, used to represent a road intersection in the city. Functionally
+     the same as _Place but it is drawn as a grey circle on the canvas.
     """
-    traffic_light: int
-    stop_time: float
-
-    def __init__(self, pos: tuple[float, float],
-                 traffic_light: int = 0, stop_time: int = 0) -> None:
-        # TODO: adjust the default values later on
+    def __init__(self, pos: tuple[float, float]) -> None:
         super().__init__(pos)
-        self.traffic_light = traffic_light
-        self.stop_time = stop_time
 
     def __str__(self) -> str:
         """
@@ -124,19 +110,14 @@ class _BusStop(_Place):
 
     Instance Attributes:
         - wait_time: Time the bus takes at the bus stop
-
-    Representation Invariants:
-        # TODO
+        - neighbours: The bus stop's neighbours
     """
-    wait_time: float
     neighbours: dict[_Place, float]
     WIDTH: int = 20
 
     def __init__(self, pos: tuple[float, float]) -> None:
-        # TODO: adjust the default values later on
         super().__init__(pos)
         self.neighbours = dict()
-        self.wait_time = random.randint(1, 5)
 
     def __str__(self) -> str:
         """
@@ -471,11 +452,11 @@ class City(Drawable):
         # Clear all bus stops
         self._bus_stops[0].clear()
 
-    def add_bus_route(self, route: list[tuple]):
+    def add_bus_route(self, route: list[tuple]) -> None:
         """Add a bus route to the list self._bus_routes
 
         Preconditions:
-            # TODO
+            - all(bus_stop in self._bus_stops for bus_stop in route)
         """
         if route not in self._bus_routes:
             self._bus_routes.append(route)
@@ -514,12 +495,12 @@ class City(Drawable):
     def get_all_places(self) -> set:
         """Return set of all place coordinates in the city that is not a bus stop
         """
-        return {pos for pos in self._places}
+        return set(pos for pos in self._places)
 
     def get_all_bus_stops(self) -> set:
         """Return set of all coordinates in the city that is a bus stop
         """
-        return {pos for pos in self._bus_stops[0]}
+        return set(pos for pos in self._bus_stops[0])
 
     def get_distance(self, pos1: tuple[float, float], pos2: tuple[float, float]) -> float:
         """
@@ -660,6 +641,7 @@ class City(Drawable):
                 if neighbour not in visited and new_cost < costs[neighbour]:
                     costs[neighbour] = new_cost
                     distances[neighbour] = distances[curr] + self.get_distance(curr, neighbour)
+
                     predecessor[neighbour] = curr
 
             visited.add(curr)
@@ -725,7 +707,8 @@ class City(Drawable):
                 p1 = target_street[0]
                 p2 = target_street[1]
 
-                if target_street[0] == bus_stop_proj or target_street[1] == bus_stop_proj:
+                if bus_stop_proj in (target_street[0], target_street[1]):
+
                     bus_stop_proj = (int(bus_stop_proj[0]), int(bus_stop_proj[1]))
                     self.add_bus_stop(bus_stop_proj)
                     projections.append(bus_stop_proj)
@@ -922,11 +905,25 @@ class City(Drawable):
         pygame.draw.line(screen, STREET, street[0], street[1], self.STREET_WIDTH)
 
     def draw_highlighted_street(self, street: tuple[tuple, tuple], screen: pygame.Surface,
-                                Colour: tuple) -> None:
+                                colour: tuple) -> None:
         """
         A helper method to draw a highlighted street (a line) between two positions on a screen.
 
         Preconditions:
             - street in self._streets
         """
-        pygame.draw.line(screen, Colour, street[0], street[1], self.STREET_WIDTH)
+        pygame.draw.line(screen, colour, street[0], street[1], self.STREET_WIDTH)
+
+
+if __name__ == '__main__':
+    import python_ta.contracts
+    python_ta.contracts.check_all_contracts()
+
+    import python_ta
+    python_ta.check_all(config={
+        'extra-imports': ['pygame', 'random', 'pandas', 'copy', 'sklearn.cluster',
+                          'pygame_stuff.drawing', 'utility_functions'],
+        'allowed-io': ['build_from_file', 'export_to_file'],
+        'max-line-length': 100,
+        'disable': ['E1136']
+    })

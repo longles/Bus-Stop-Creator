@@ -157,6 +157,7 @@ class ModelCity(City):
                     place_pair = PlacePair((place1.pos, place2.pos))
 
                     if place1.population_density < place2.population_density:
+
                         place_pair.set_flow(int(place2.population_density
                                                 * random.uniform(0.5, 0.55)),
                                             int(place2.population_density
@@ -177,6 +178,7 @@ class ModelCity(City):
         the original bus routes as intact as possible.
 
         For the specific computation plan please look at our project report.
+
         """
         if self._bus_stops == dict():
             return
@@ -234,7 +236,6 @@ class ModelCity(City):
         >>> city.merge_route(
         ...     [(691, 477), (609, 273), (544, 250), (437, 256), (381, 195), (246, 226)],
         ...     [(381, 195), (246, 226)])
-        [(691, 477), (609, 273), (544, 250), (437, 256), (381, 195), (246, 226)]
         """
         lst1_overlap = []
         for element in lst1:

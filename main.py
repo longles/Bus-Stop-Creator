@@ -11,9 +11,9 @@ city = City.build_from_file("data/map.txt", "data/bus.txt")
 city.shortest_path((437,256), (609,273))
 """
 # import pygame
-from graph_stuff.city_classes import *
-from pygame_stuff.drawing import *
 from graph_stuff.route_planning import *
+
+WIDTH, HEIGHT = 1000, 800
 
 
 def run_visualization(map_file: str = "data/map.txt",
@@ -184,6 +184,7 @@ def run_visualization(map_file: str = "data/map.txt",
                         else:
                             counter = 1
                             city.change_inertia(temp_inertia)
+
                         safety_counter += 1
                         if safety_counter == 100:
                             break
@@ -221,4 +222,12 @@ def run_visualization(map_file: str = "data/map.txt",
 
 
 if __name__ == "__main__":
+    import python_ta
+    python_ta.check_all(config={
+        'extra-imports': ['graph_stuff.route_planning'],
+        'allowed-io': ['run_visualization'],
+        'max-line-length': 100,
+        'disable': ['E1136']
+    })
+
     run_visualization()
