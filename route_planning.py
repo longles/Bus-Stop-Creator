@@ -1,8 +1,5 @@
 """
 route planning
-
-Assume that we auto generating a bus route system that only uses 1 type of bus, like
-the mini bus network in hong kong.
 """
 import random
 
@@ -18,6 +15,12 @@ class ComplicatedPlace(_Place):
 
     Instance Attributes:
         - population_density: population density of the place (people amount per km squared)
+        - pos: The coordinates of the CENTRE of the place
+        - neighbours: The vertices that are adjacent to this vertex and their respective distances
+
+    Representation Invariants:
+        - self not in self.neighbours
+        - all(self in u.neighbours for u in self.neighbours)
     """
     pos: tuple[float, float]
     neighbours: dict[_Place, float]
@@ -41,12 +44,12 @@ class PlacePair:
 
     Instance Attributes:
         - coords: the coordinates of the two bus stops
+        - path1flow: avg passenger # that want to travel from coords[0] to coords[1] in 1 hour
+        - path2flow: avg passenger # that want to travel from coords[1] to coords[0] in 1 hour
     """
     coords: tuple[tuple[float, float], tuple[float, float]]
-    path1flow: int  # passengers that need to travel from coords[0] to coords[1] in 1 hour (avg)
-    path2flow: int  # passengers that need to travel from coords[1] to coords[0] in 1 hour (avg)
-
-    # frequency: int  # number of times vehicles are employed over 1 hour
+    path1flow: int
+    path2flow: int
 
     def __init__(self, coords: tuple[tuple[float, float], tuple[float, float]]) -> None:
         self.coords = coords
@@ -55,7 +58,7 @@ class PlacePair:
 
     def set_flow(self, pathflow1: int, pathflow2: int) -> None:
         """
-        set the path1flow, path2flow of this edge
+        set the path1flow, path2flow of this place pair
         """
         self.path1flow = pathflow1
         self.path2flow = pathflow2
@@ -63,14 +66,25 @@ class PlacePair:
 
 def avg_flow(pair: PlacePair) -> int:
     """
-    return the average flow of a PlacePair
+    return the average path flow of a PlacePair
     """
     return int((pair.path1flow + pair.path2flow) / 2)
 
 
 class ModelCity(City):
     """
-    A slightly modified city class for route generation modeling
+    A slightly modified city class for route generation modeling.
+
+    Private Instance Attributes:
+        - _places: Dictionary of coordinate: complicated place pairs in the city
+        - _streets: Set of coordinate pairs which define a street
+                    For example, ((x, y), (a, b)) is a single street that connects (x, y)
+                    to (a, b). This attribute is mainly used to facilitate drawing
+        - _bus_stops: a dictionary of coordinate to bus stop pairs
+        - _bus_routes: a list of lists of tuples; every list of tuple in this list
+                        represents a bus route, with each tuple representing a coordinate.
+        - _place_pairs: a list of PlacePair s.
+        - _simple_city: the City() class this CityModel is based on.
     """
     _places: dict[tuple, ComplicatedPlace]
     _streets: set[tuple[tuple, tuple]]
@@ -104,10 +118,11 @@ class ModelCity(City):
         city_type == "distributed":
         randomly assign places with population densities
 
-        There are two ideologies for the auto generation mode centered:
+        Two model rules are considered for the model generation:
         1. take a pair of places A and B, the flow from A to B and B to A should be similar
         in a city (people who go work/play in another place will return)
-        2. flow to densed areas should be larger
+        2. flow to densed areas should be partly proportional to the population of the high density
+        area (city centers and high density places attracts more people).
 
 
         precondition
@@ -142,13 +157,12 @@ class ModelCity(City):
                     place_pair = PlacePair((place1.pos, place2.pos))
 
                     if place1.population_density < place2.population_density:
-                        # proportion = place1.population_density / place2.population_density
+
                         place_pair.set_flow(int(place2.population_density
                                                 * random.uniform(0.5, 0.55)),
                                             int(place2.population_density
                                                 * random.uniform(0.5, 0.55)))
                     else:
-                        # proportion = place2.population_density / place1.population_density
                         place_pair.set_flow(int(place1.population_density
                                                 * random.uniform(0.5, 0.55)),
                                             int(place1.population_density
@@ -159,16 +173,12 @@ class ModelCity(City):
         """
         model 1 of trying to generate bus routes
 
-        The strategy is to design bus routes where the edges with the most flow are covered;
-        also make sure
+        The strategy is to pickout candidate bus routes that values high demand of consumers
+        (prioritizes path flow) and merge those bus routes together, with the merge leaving
+        the original bus routes as intact as possible.
 
-        city = City.build_from_file("data/map_save.txt", "data/bus_save.txt")
-        City = ModelCity(city)
-        City.generate_city("centered")
-        City.bus_route_model1()
+        For the specific computation plan please look at our project report.
 
-        City.merge_route([(691, 477), (609, 273), (544, 250), (437, 256),
-        (381, 195), (246, 226)], [(381, 195), (246, 226)])
         """
         if self._bus_stops == dict():
             return
@@ -201,7 +211,7 @@ class ModelCity(City):
                 break
 
         routes2 = copy.copy(routes)
-        # print(routes2)
+
         for r in routes:
             for r2 in routes:
                 if r != r2 and r in routes2 and r2 in routes2:
@@ -210,15 +220,22 @@ class ModelCity(City):
                         self._bus_routes.append(merged_route)
                         routes2.remove(r)
                         routes2.remove(r2)
-        # print(routes2)
+
         for r in routes2:
             self._bus_routes.append(r)
 
     def merge_route(self, lst1: list, lst2: list) -> list:
         """
-        [(691, 477), (609, 273), (544, 250), (437, 256), (381, 195), (246, 226)]
-        [(540, 500), (457, 417), (437, 256), (381, 195), (246, 226)]
-        [(381, 195), (246, 226)]
+        Merge two routes. Return [] if they cannot be merged.
+
+        >>> city = ModelCity(City())
+        >>> city.merge_route(
+        ...     [(691, 477), (609, 273), (544, 250), (437, 256), (381, 195), (246, 226)],
+        ...     [(540, 500), (457, 417), (437, 256), (381, 195), (246, 226)])
+        []
+        >>> city.merge_route(
+        ...     [(691, 477), (609, 273), (544, 250), (437, 256), (381, 195), (246, 226)],
+        ...     [(381, 195), (246, 226)])
         """
         lst1_overlap = []
         for element in lst1:
@@ -246,7 +263,6 @@ class ModelCity(City):
             else:
                 consecutive_counter2 = 0
 
-        # print(lst1_overlap, lst2_overlap)
         # if the repeated elements are not consecutive, cannot merge
         if consecutive_counter2 != sum(lst2_overlap) or \
                 consecutive_counter != sum(lst1_overlap):
@@ -266,6 +282,7 @@ class ModelCity(City):
                 return []
         # so the repeated elements are on the edge of the list for both lists
         else:
+            # then divide into a bunch of very specific cases
             if (lst1[0] == lst2[0] and lst1[1] == lst2[1]) or (
                     lst1[-2] == lst2[-2] and lst1[-1] == lst2[-1]):
                 if len(lst1) != 2 and len(lst2) != 2:
@@ -284,11 +301,6 @@ class ModelCity(City):
                 return lst1 + lst2
             else:
                 return []
-
-    def analyse_street(self) -> None:
-        """
-        .
-        """
 
 
 if __name__ == '__main__':
