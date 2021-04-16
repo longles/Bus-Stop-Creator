@@ -1,4 +1,12 @@
+# code checking
 python-ta
+
+# visualization 
 pygame
+
+# math and number crunching
 pandas
+numpy
+
+# machine learning
 sklearn
