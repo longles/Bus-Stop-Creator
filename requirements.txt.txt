@@ -1,0 +1,4 @@
+python-ta
+pygame
+pandas
+sklearn
