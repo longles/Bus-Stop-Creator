@@ -5,7 +5,7 @@ city_classes.py
 This file contains the class definitions for the objects needed to represent
 a city.
   - City
-  - _Place
+  - Place
   - _Intersection
 ================================================================================
 Copyright (c) 2021 Andy Wang, Varun Pillai, Ling Ai, Daniel Liu
@@ -17,14 +17,18 @@ city.export_to_file("data/map_save.txt", "data/bus_save.txt")
 from __future__ import annotations
 from typing import Union
 
+from pygame_stuff.drawing import *
+from utility_functions import *
+from sklearn.cluster import KMeans
+
+import pygame
 import random
+import pandas as pd
+
 import copy
 import pygame
 import pandas as pd
 
-from sklearn.cluster import KMeans
-from pygame_stuff.drawing import *
-from utility_functions import *
 
 
 class _Place(Drawable):
@@ -192,7 +196,7 @@ class City(Drawable):
     """
     _places: dict[tuple, _Place]
     _streets: set[tuple[tuple, tuple]]
-    _bus_stops: list[dict[tuple: _Place], float]
+    _bus_stops: list[dict[tuple: _BusStop], float]
     _bus_routes: list[list[tuple]]
     STREET_WIDTH: int = 10
 
@@ -217,25 +221,11 @@ class City(Drawable):
         city = City()
         calculate_inertia = False
 
-        with open(map_file, 'r') as f:
-            for line in f:
-                parsed_line = line.split()
-
-                if parsed_line[0] in {"place", "intersection"}:
-                    # The line encodes a place
-                    kind = parsed_line[0]
-                    x, y = int(parsed_line[1]), int(parsed_line[2])
-                    city.add_place((x, y), kind)
-                else:
-                    # The line encodes a street
-                    x1, y1 = int(parsed_line[0]), int(parsed_line[1])
-                    x2, y2 = int(parsed_line[2]), int(parsed_line[3])
-                    city.add_street((x1, y1), (x2, y2))
 
         with open(bus_file, 'r') as f:
             for line in f:
                 parsed_line = line.split()
-
+          
                 # Read bus stops from txt file
                 if parsed_line[0] == "bus_stop":
                     x, y = int(parsed_line[1]), int(parsed_line[2])
@@ -259,6 +249,21 @@ class City(Drawable):
                         x1, y1 = int(parsed_line[2 * i]), int(parsed_line[2 * i + 1])
                         route.append((x1, y1))
                     city.add_bus_route(route)
+
+        with open(map_file, 'r') as f:
+            for line in f:
+                parsed_line = line.split()
+
+                if parsed_line[0] in {"place", "intersection"}:
+                    # The line encodes a place
+                    kind = parsed_line[0]
+                    x, y = int(parsed_line[1]), int(parsed_line[2])
+                    city.add_place((x, y), kind)
+                else:
+                    # The line encodes a street
+                    x1, y1 = int(parsed_line[0]), int(parsed_line[1])
+                    x2, y2 = int(parsed_line[2]), int(parsed_line[3])
+                    city.add_street((x1, y1), (x2, y2))
 
         places = city.get_all_places()
         centers = list(city._bus_stops[0].keys())
@@ -321,7 +326,7 @@ class City(Drawable):
 
     def add_place(self, pos: tuple[float, float], kind: str = 'place') -> None:
         """
-        Add a _Place to the dictionary with the same coordinates as the mouse click
+        Add a Place to the dictionary with the same coordinates as the mouse click
 
         Preconditions:
             - 0 <= pos[0] <= WIDTH and 0 <= pos[1] <= HEIGHT
@@ -471,9 +476,8 @@ class City(Drawable):
         # Clear all bus stops
         self._bus_stops[0].clear()
 
-    def add_bus_route(self, route: list[tuple]) -> None:
-        """
-        Add a bus route to the list self._bus_routes
+    def add_bus_route(self, route: list[tuple]):
+        """Add a bus route to the list self._bus_routes
 
         Preconditions:
             # TODO
@@ -616,7 +620,19 @@ class City(Drawable):
         Returns a list containing the shortest path (may not be the case; read below for more info)
         between 'start' and 'end' and the total distance between the two places
 
-        This implementation of A* will not always give you the shortest path.
+        Based on the A* Shortest Path Algorithm which is a 'smart' version of Dijkstra. It uses a
+        heuristic function to determine which nodes are better instead of traversing over every
+        node.
+
+        For A* to find the shortest path, the heuristic must not overestimate the
+        remaining distance to the end. With a city graph, there is no particular rule to how
+        streets and places must be placed (compared to a grid-based graph). As a such, basic
+        heuristic functions like 'distance','diagonal' or 'manhattan' in utility_functions.py may
+        overestimate the remaining distance. There are certainly custom heuristic functions out
+        there that provide far better estimates but they are way beyond the scope of this
+        project and course.
+
+        As such, this implementation of A* will not always give you the shortest path.
 
         Preconditions:
             - 0 <= start[0] <= WIDTH and 0 <= start[1] <= HEIGHT
@@ -649,6 +665,7 @@ class City(Drawable):
                 if neighbour not in visited and new_cost < costs[neighbour]:
                     costs[neighbour] = new_cost
                     distances[neighbour] = distances[curr] + self.get_distance(curr, neighbour)
+
                     predecessor[neighbour] = curr
 
             visited.add(curr)
@@ -714,7 +731,8 @@ class City(Drawable):
                 p1 = target_street[0]
                 p2 = target_street[1]
 
-                if bus_stop_proj in (target_street[0], target_street[1]):
+                if target_street[0] == bus_stop_proj or target_street[1] == bus_stop_proj:
+
                     bus_stop_proj = (int(bus_stop_proj[0]), int(bus_stop_proj[1]))
                     self.add_bus_stop(bus_stop_proj)
                     projections.append(bus_stop_proj)
@@ -782,6 +800,34 @@ class City(Drawable):
         # km.inertia_ is the original inertia with the auto generated centroid
         return [list(map(tuple, centers)), temp]
 
+    def calculate_inertia(self, place_coords: list, centers: list) -> float:
+        """
+        Inertia is the within-cluster sum-of-squares.
+        It is a measure of how far 'every point in a cluster' is from the center (another point)
+
+        Since the the centers of clusters calculated in _get_bus_stops() are being projected onto
+        streets (forming the projected centers), a new inertia has to be calculated for
+        the new projected centers
+
+        - place_coords is a list of the coordinates of the places in self._places
+        - centers is a list of the centers of the len(centers) clusters
+
+        Read this for more info:
+        https://scikit-learn.org/stable/modules/clustering.html#k-means
+
+        Preconditions:
+            - all(place in self._places for place in place_coords)
+            - all(0 <= center[0] <= WIDTH for center in centers)
+            - all(0 <= center[1] <= HEIGHT for center in centers)
+        """
+        inertia = 0.0
+        for e in range(len(place_coords)):
+            distances = []
+            for i in range(len(centers)):
+                distances.append(distance(tuple(place_coords[e]), centers[i]))
+            inertia += min(distances) ** 2
+        return inertia
+
     def add_bus_stops(self, num: int) -> float:
         """Return the inertia of the bus system
         """
@@ -791,7 +837,7 @@ class City(Drawable):
         projected_centers = self._bus_stop_projections(bus_stops)
 
         if None not in projected_centers:
-            return calc_inertia(km_parameters[1], projected_centers)
+            return self.calculate_inertia(km_parameters[1], projected_centers)
         else:
             return -1.0
 
@@ -882,25 +928,14 @@ class City(Drawable):
         """
         pygame.draw.line(screen, STREET, street[0], street[1], self.STREET_WIDTH)
 
-    def draw_highlighted_street(self, street: tuple[tuple, tuple], screen: pygame.Surface) -> None:
+
+    def draw_highlighted_street(self, street: tuple[tuple, tuple], screen: pygame.Surface,
+                                Colour: tuple) -> None:
         """
         A helper method to draw a highlighted street (a line) between two positions on a screen.
 
         Preconditions:
             - street in self._streets
         """
-        pygame.draw.line(screen, HIGHLIGHTED_STREET, street[0], street[1], self.STREET_WIDTH)
+        pygame.draw.line(screen, Colour, street[0], street[1], self.STREET_WIDTH)
 
-
-if __name__ == '__main__':
-    import python_ta.contracts
-    python_ta.contracts.check_all_contracts()
-
-    import python_ta
-    python_ta.check_all(config={
-        'extra-imports': ['pygame', 'random', 'pandas', 'copy', 'sklearn.cluster',
-                          'pygame_stuff.drawing', 'utility_functions'],
-        'allowed-io': ['build_from_file', 'export_to_file'],
-        'max-line-length': 100,
-        'disable': ['E1136']
-    })

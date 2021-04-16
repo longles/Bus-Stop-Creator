@@ -13,6 +13,7 @@ city.shortest_path((437,256), (609,273))
 # import pygame
 from graph_stuff.city_classes import *
 from pygame_stuff.drawing import *
+from graph_stuff.route_planning import *
 
 
 def run_visualization(map_file: str = "data/map.txt",
@@ -153,9 +154,11 @@ def run_visualization(map_file: str = "data/map.txt",
                 screen.fill(GRASS)
                 city.draw(screen)
                 if len(path) >= 2:
+                    color = random.choice(COLOURS)
                     for i in range(len(path)):
                         if i != len(path) - 1:
-                            city.draw_highlighted_street((path[i], path[i + 1]), screen)
+                            city.draw_highlighted_street((path[i], path[i + 1]), screen,
+                                                         color)
                 # The advantage of doing this is that the bus stops disappear when you modify
                 # the city, and that makes sense
 
@@ -170,6 +173,7 @@ def run_visualization(map_file: str = "data/map.txt",
                     # on what is inertia. The reason this is done is because a new
                     # inertia exist after projection.
                     counter = 1
+                    safety_counter = 1
                     while True:
                         if counter == 5:
                             break
@@ -180,9 +184,31 @@ def run_visualization(map_file: str = "data/map.txt",
                         else:
                             counter = 1
                             city.change_inertia(temp_inertia)
+                            
+                        safety_counter += 1
+                        if safety_counter == 100:
+                            break
 
                     screen.fill(GRASS)
                     city.draw(screen)
+                if event.key == pygame.K_2 and pygame.K_b:
+                    # get the bus routes!
+                    complicated_city = ModelCity(city)
+                    complicated_city.generate_city("centered")
+                    complicated_city.bus_route_model1()
+                    bus_routes = complicated_city.return_bus_routes()
+                    for r in bus_routes:
+                        city.add_bus_route(r)
+
+                    screen.fill(GRASS)
+                    city.draw(screen)
+                    for p in bus_routes:
+                        if len(p) >= 2:
+                            color = random.choice(COLOURS)
+                            for i in range(len(p)):
+                                if i != len(p) - 1:
+                                    city.draw_highlighted_street((p[i], p[i + 1]), screen,
+                                                                 color)           
 
                 if event.key == pygame.K_s and ctrl_down:  # Ctrl + s to save the city
                     city.export_to_file(map_save, bus_save)
