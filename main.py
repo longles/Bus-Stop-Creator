@@ -196,4 +196,12 @@ def run_visualization(map_file: str = "data/map.txt",
 
 
 if __name__ == "__main__":
+    import python_ta
+    python_ta.check_all(config={
+        'extra-imports': [],
+        'allowed-io': ['run_visualization'],
+        'max-line-length': 100,
+        'disable': ['E1136']
+    })
+
     run_visualization()

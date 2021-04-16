@@ -8,11 +8,40 @@ Copyright (c) 2021 Andy Wang, Varun Pillai, Ling Ai, Daniel Liu
 """
 import math
 import numpy as np
+from pygame_stuff.drawing import WIDTH, HEIGHT
 
 
 # ========================================================
 # General mathematics
 # ========================================================
+
+def calc_inertia(place_coords: list, centers: list) -> float:
+    """
+    Inertia is the within-cluster sum-of-squares.
+    It is a measure of how far 'every point in a cluster' is from the center (another point)
+
+    Since the the centers of clusters calculated in _get_bus_stops() are being projected onto
+    streets (forming the projected centers), a new inertia has to be calculated for
+    the new projected centers
+
+    - place_coords is a list of the coordinates of the places in self._places
+    - centers is a list of the centers of the len(centers) clusters
+
+    Read this for more info:
+    https://scikit-learn.org/stable/modules/clustering.html#k-means
+
+    Preconditions:
+        - all(0 <= center[0] <= WIDTH for center in centers)
+        - all(0 <= center[1] <= HEIGHT for center in centers)
+    """
+    inertia = 0.0
+    for e in range(len(place_coords)):
+        distances = []
+        for i in range(len(centers)):
+            distances.append(distance(tuple(place_coords[e]), centers[i]))
+        inertia += min(distances) ** 2
+    return inertia
+
 
 def local_max(lst: list) -> list:
     """
@@ -21,14 +50,14 @@ def local_max(lst: list) -> list:
     """
     maxes = []
     for i in range(len(lst)):
-        if i != 0 and i != len(lst) - 1:
+        if i not in (0, len(lst) - 1):
             if lst[i - 1] < lst[i] > lst[i + 1]:
                 maxes.append(lst[i])
 
     return maxes
 
 
-def projection(a, b, p) -> tuple[float, float]:
+def projection(a: tuple, b: tuple, p: tuple) -> tuple[float, float]:
     """Return the coordinates of the projection of point p onto line ab
     """
     vec_a = np.asarray(a)
@@ -113,3 +142,16 @@ def coord_to_long_lat(x: int, y: int, central_meridian: float, difference: int) 
     latitude = 2 * (math.atan(math.e ** (y / earth_radius)) + difference * math.pi - math.pi / 4)
 
     return (latitude, longitude)
+
+
+if __name__ == '__main__':
+    import python_ta.contracts
+    python_ta.contracts.check_all_contracts()
+
+    import python_ta
+    python_ta.check_all(config={
+        'extra-imports': ['math', 'numpy'],
+        'allowed-io': [],
+        'max-line-length': 100,
+        'disable': ['E1136']
+    })

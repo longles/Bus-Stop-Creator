@@ -17,14 +17,14 @@ city.export_to_file("data/map_save.txt", "data/bus_save.txt")
 from __future__ import annotations
 from typing import Union
 
+import random
+import copy
+import pygame
+import pandas as pd
+
+from sklearn.cluster import KMeans
 from pygame_stuff.drawing import *
 from utility_functions import *
-from sklearn.cluster import KMeans
-
-import pygame
-import random
-import pandas as pd
-import copy
 
 
 class _Place(Drawable):
@@ -263,7 +263,7 @@ class City(Drawable):
         places = city.get_all_places()
         centers = list(city._bus_stops[0].keys())
         if calculate_inertia and len(places) != 0 and len(centers) != 0:
-            city.change_inertia(city.calculate_inertia(list(places), centers))
+            city.change_inertia(calc_inertia(list(places), centers))
 
         return city
 
@@ -471,8 +471,9 @@ class City(Drawable):
         # Clear all bus stops
         self._bus_stops[0].clear()
 
-    def add_bus_route(self, route: list[tuple]):
-        """Add a bus route to the list self._bus_routes
+    def add_bus_route(self, route: list[tuple]) -> None:
+        """
+        Add a bus route to the list self._bus_routes
 
         Preconditions:
             # TODO
@@ -514,12 +515,12 @@ class City(Drawable):
     def get_all_places(self) -> set:
         """Return set of all place coordinates in the city that is not a bus stop
         """
-        return {pos for pos in self._places}
+        return set(pos for pos in self._places)
 
     def get_all_bus_stops(self) -> set:
         """Return set of all coordinates in the city that is a bus stop
         """
-        return {pos for pos in self._bus_stops[0]}
+        return set(pos for pos in self._bus_stops[0])
 
     def get_distance(self, pos1: tuple[float, float], pos2: tuple[float, float]) -> float:
         """
@@ -615,19 +616,7 @@ class City(Drawable):
         Returns a list containing the shortest path (may not be the case; read below for more info)
         between 'start' and 'end' and the total distance between the two places
 
-        Based on the A* Shortest Path Algorithm which is a 'smart' version of Dijkstra. It uses a
-        heuristic function to determine which nodes are better instead of traversing over every
-        node.
-
-        For A* to find the shortest path, the heuristic must not overestimate the
-        remaining distance to the end. With a city graph, there is no particular rule to how
-        streets and places must be placed (compared to a grid-based graph). As a such, basic
-        heuristic functions like 'distance','diagonal' or 'manhattan' in utility_functions.py may
-        overestimate the remaining distance. There are certainly custom heuristic functions out
-        there that provide far better estimates but they are way beyond the scope of this
-        project and course.
-
-        As such, this implementation of A* will not always give you the shortest path.
+        This implementation of A* will not always give you the shortest path.
 
         Preconditions:
             - 0 <= start[0] <= WIDTH and 0 <= start[1] <= HEIGHT
@@ -725,7 +714,7 @@ class City(Drawable):
                 p1 = target_street[0]
                 p2 = target_street[1]
 
-                if target_street[0] == bus_stop_proj or target_street[1] == bus_stop_proj:
+                if bus_stop_proj in (target_street[0], target_street[1]):
                     bus_stop_proj = (int(bus_stop_proj[0]), int(bus_stop_proj[1]))
                     self.add_bus_stop(bus_stop_proj)
                     projections.append(bus_stop_proj)
@@ -793,34 +782,6 @@ class City(Drawable):
         # km.inertia_ is the original inertia with the auto generated centroid
         return [list(map(tuple, centers)), temp]
 
-    def calculate_inertia(self, place_coords: list, centers: list) -> float:
-        """
-        Inertia is the within-cluster sum-of-squares.
-        It is a measure of how far 'every point in a cluster' is from the center (another point)
-
-        Since the the centers of clusters calculated in _get_bus_stops() are being projected onto
-        streets (forming the projected centers), a new inertia has to be calculated for
-        the new projected centers
-
-        - place_coords is a list of the coordinates of the places in self._places
-        - centers is a list of the centers of the len(centers) clusters
-
-        Read this for more info:
-        https://scikit-learn.org/stable/modules/clustering.html#k-means
-
-        Preconditions:
-            - all(place in self._places for place in place_coords)
-            - all(0 <= center[0] <= WIDTH for center in centers)
-            - all(0 <= center[1] <= HEIGHT for center in centers)
-        """
-        inertia = 0.0
-        for e in range(len(place_coords)):
-            distances = []
-            for i in range(len(centers)):
-                distances.append(distance(tuple(place_coords[e]), centers[i]))
-            inertia += min(distances) ** 2
-        return inertia
-
     def add_bus_stops(self, num: int) -> float:
         """Return the inertia of the bus system
         """
@@ -830,7 +791,7 @@ class City(Drawable):
         projected_centers = self._bus_stop_projections(bus_stops)
 
         if None not in projected_centers:
-            return self.calculate_inertia(km_parameters[1], projected_centers)
+            return calc_inertia(km_parameters[1], projected_centers)
         else:
             return -1.0
 
@@ -929,3 +890,17 @@ class City(Drawable):
             - street in self._streets
         """
         pygame.draw.line(screen, HIGHLIGHTED_STREET, street[0], street[1], self.STREET_WIDTH)
+
+
+if __name__ == '__main__':
+    import python_ta.contracts
+    python_ta.contracts.check_all_contracts()
+
+    import python_ta
+    python_ta.check_all(config={
+        'extra-imports': ['pygame', 'random', 'pandas', 'copy', 'sklearn.cluster',
+                          'pygame_stuff.drawing', 'utility_functions'],
+        'allowed-io': ['build_from_file', 'export_to_file'],
+        'max-line-length': 100,
+        'disable': ['E1136']
+    })
