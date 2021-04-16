@@ -8,7 +8,6 @@ Copyright (c) 2021 Andy Wang, Varun Pillai, Ling Ai, Daniel Liu
 """
 import math
 import numpy as np
-from pygame_stuff.drawing import WIDTH, HEIGHT
 
 
 # ========================================================

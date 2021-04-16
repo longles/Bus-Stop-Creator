@@ -17,18 +17,14 @@ city.export_to_file("data/map_save.txt", "data/bus_save.txt")
 from __future__ import annotations
 from typing import Union
 
+import copy
+import random
+import pygame
+import pandas as pd
+
+from sklearn.cluster import KMeans
 from pygame_stuff.drawing import *
 from utility_functions import *
-from sklearn.cluster import KMeans
-
-import pygame
-import random
-import pandas as pd
-
-import copy
-import pygame
-import pandas as pd
-
 
 
 class _Place(Drawable):
@@ -103,7 +99,6 @@ class _Intersection(_Place):
 
     def __init__(self, pos: tuple[float, float],
                  traffic_light: int = 0, stop_time: int = 0) -> None:
-        # TODO: adjust the default values later on
         super().__init__(pos)
         self.traffic_light = traffic_light
         self.stop_time = stop_time
@@ -137,7 +132,6 @@ class _BusStop(_Place):
     WIDTH: int = 20
 
     def __init__(self, pos: tuple[float, float]) -> None:
-        # TODO: adjust the default values later on
         super().__init__(pos)
         self.neighbours = dict()
         self.wait_time = random.randint(1, 5)
@@ -221,11 +215,10 @@ class City(Drawable):
         city = City()
         calculate_inertia = False
 
-
         with open(bus_file, 'r') as f:
             for line in f:
                 parsed_line = line.split()
-          
+
                 # Read bus stops from txt file
                 if parsed_line[0] == "bus_stop":
                     x, y = int(parsed_line[1]), int(parsed_line[2])
@@ -928,14 +921,26 @@ class City(Drawable):
         """
         pygame.draw.line(screen, STREET, street[0], street[1], self.STREET_WIDTH)
 
-
     def draw_highlighted_street(self, street: tuple[tuple, tuple], screen: pygame.Surface,
-                                Colour: tuple) -> None:
+                                colour: tuple) -> None:
         """
         A helper method to draw a highlighted street (a line) between two positions on a screen.
 
         Preconditions:
             - street in self._streets
         """
-        pygame.draw.line(screen, Colour, street[0], street[1], self.STREET_WIDTH)
+        pygame.draw.line(screen, colour, street[0], street[1], self.STREET_WIDTH)
 
+
+if __name__ == '__main__':
+    import python_ta.contracts
+    python_ta.contracts.check_all_contracts()
+
+    import python_ta
+    python_ta.check_all(config={
+        'extra-imports': ['pygame', 'random', 'pandas', 'copy', 'sklearn.cluster',
+                          'pygame_stuff.drawing', 'utility_functions'],
+        'allowed-io': ['build_from_file', 'export_to_file'],
+        'max-line-length': 100,
+        'disable': ['E1136']
+    })

@@ -11,12 +11,12 @@ from utility_functions import *
 import copy
 import random
 
-# constants
-fixed_cost = 45000  # fixed cost for getting a new bus in CAD
-bus_speed = 60000  # bus speed (meters per hour)
-total_bus_limit = 1000  # no government/company can employ infinite amount of bus
-operating_cost = 60 * 20 * 1.442  # operating cost for keeping a vehicle running for an hour
-bus_capacity = 60  # max number of passengers in bus
+# Constants
+fixed_cost = 45000  # Fixed cost for getting a new bus in CAD
+bus_speed = 60000  # Bus speed (meters per hour)
+total_bus_limit = 1000  # No government/company can employ infinite amount of bus
+operating_cost = 60 * 20 * 1.442  # Operating cost for keeping a vehicle running for an hour
+bus_capacity = 60  # Max number of passengers in bus
 
 
 class ComplicatedPlace(_Place):
@@ -35,7 +35,7 @@ class ComplicatedPlace(_Place):
         self.neighbours = copy.deepcopy(place.neighbours)
         self.population_density = 0
 
-    def set_density(self, density: int):
+    def set_density(self, density: int) -> None:
         """
         set the population density
         """
@@ -60,7 +60,7 @@ class PlacePair:
         self.path1flow = 0
         self.path2flow = 0
 
-    def set_flow(self, pathflow1: int, pathflow2: int):
+    def set_flow(self, pathflow1: int, pathflow2: int) -> None:
         """
         set the path1flow, path2flow of this edge
         """
@@ -72,7 +72,7 @@ def avg_flow(pair: PlacePair) -> int:
     """
     return the average flow of a PlacePair
     """
-    return int((pair.path1flow + pair.path2flow)/2)
+    return int((pair.path1flow + pair.path2flow) / 2)
 
 
 class ModelCity(City):
@@ -150,10 +150,10 @@ class ModelCity(City):
 
                     if place1.population_density < place2.population_density:
                         # proportion = place1.population_density / place2.population_density
-                        place_pair.set_flow(int(place2.population_density *
-                                                random.uniform(0.5, 0.55)),
-                                            int(place2.population_density *
-                                                random.uniform(0.5, 0.55)))
+                        place_pair.set_flow(int(place2.population_density
+                                                * random.uniform(0.5, 0.55)),
+                                            int(place2.population_density
+                                                * random.uniform(0.5, 0.55)))
                     else:
                         # proportion = place2.population_density / place1.population_density
                         place_pair.set_flow(int(place1.population_density *
@@ -174,24 +174,25 @@ class ModelCity(City):
         City.generate_city("centered")
         City.bus_route_model1()
 
-        City.merge_route([(691, 477), (609, 273), (544, 250), (437, 256), (381, 195), (246, 226)], [(381, 195), (246, 226)])
+        City.merge_route([(691, 477), (609, 273), (544, 250), (437, 256),
+        (381, 195), (246, 226)], [(381, 195), (246, 226)])
         """
         if self._bus_stops == dict():
             return
         self._bus_routes = []
         self._place_pairs.sort(key=avg_flow, reverse=True)
-        busstops = [index for index in self._bus_stops]
+        bus_stops = [index for index in self._bus_stops]
         potential_paths = []
         for pair in self._place_pairs:
             distance1 = []
-            for coord in busstops:
+            for coord in bus_stops:
                 distance1.append(distance(coord, pair.coords[0]))
-            b1 = busstops[distance1.index(min(distance1))]
+            b1 = bus_stops[distance1.index(min(distance1))]
 
             distance2 = []
-            for coord in busstops:
+            for coord in bus_stops:
                 distance2.append(distance(coord, pair.coords[1]))
-            b2 = busstops[distance2.index(min(distance2))]
+            b2 = bus_stops[distance2.index(min(distance2))]
 
             path = self._simple_city.dijkstra_path(b1, b2)
             potential_paths.append(path[0])
@@ -199,11 +200,11 @@ class ModelCity(City):
         routes = []
         for p in potential_paths:
             for coordinate in p:
-                if coordinate in busstops:
-                    busstops.remove(coordinate)
+                if coordinate in bus_stops:
+                    bus_stops.remove(coordinate)
             if p != []:
                 routes.append(p)
-            if busstops == []:
+            if bus_stops == []:
                 break
 
         routes2 = copy.copy(routes)
@@ -222,7 +223,6 @@ class ModelCity(City):
 
     def merge_route(self, lst1: list, lst2: list) -> list:
         """
-        .
         [(691, 477), (609, 273), (544, 250), (437, 256), (381, 195), (246, 226)]
         [(540, 500), (457, 417), (437, 256), (381, 195), (246, 226)]
         [(381, 195), (246, 226)]
@@ -299,3 +299,16 @@ class ModelCity(City):
         """
         .
         """
+
+
+if __name__ == '__main__':
+    import python_ta.contracts
+    python_ta.contracts.check_all_contracts()
+
+    import python_ta
+    python_ta.check_all(config={
+        'extra-imports': ['graph_stuff.city_classes', 'utility_functions', 'copy', 'random'],
+        'allowed-io': [],
+        'max-line-length': 100,
+        'disable': ['E1136']
+    })
