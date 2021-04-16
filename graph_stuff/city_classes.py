@@ -24,7 +24,11 @@ from sklearn.cluster import KMeans
 import pygame
 import random
 import pandas as pd
+
 import copy
+import pygame
+import pandas as pd
+
 
 
 class _Place(Drawable):
@@ -217,10 +221,11 @@ class City(Drawable):
         city = City()
         calculate_inertia = False
 
+
         with open(bus_file, 'r') as f:
             for line in f:
                 parsed_line = line.split()
-
+          
                 # Read bus stops from txt file
                 if parsed_line[0] == "bus_stop":
                     x, y = int(parsed_line[1]), int(parsed_line[2])
@@ -263,7 +268,7 @@ class City(Drawable):
         places = city.get_all_places()
         centers = list(city._bus_stops[0].keys())
         if calculate_inertia and len(places) != 0 and len(centers) != 0:
-            city.change_inertia(city.calculate_inertia(list(places), centers))
+            city.change_inertia(calc_inertia(list(places), centers))
 
         return city
 
@@ -514,12 +519,12 @@ class City(Drawable):
     def get_all_places(self) -> set:
         """Return set of all place coordinates in the city that is not a bus stop
         """
-        return {pos for pos in self._places}
+        return set(pos for pos in self._places)
 
     def get_all_bus_stops(self) -> set:
         """Return set of all coordinates in the city that is a bus stop
         """
-        return {pos for pos in self._bus_stops[0]}
+        return set(pos for pos in self._bus_stops[0])
 
     def get_distance(self, pos1: tuple[float, float], pos2: tuple[float, float]) -> float:
         """
@@ -660,6 +665,7 @@ class City(Drawable):
                 if neighbour not in visited and new_cost < costs[neighbour]:
                     costs[neighbour] = new_cost
                     distances[neighbour] = distances[curr] + self.get_distance(curr, neighbour)
+
                     predecessor[neighbour] = curr
 
             visited.add(curr)
@@ -726,6 +732,7 @@ class City(Drawable):
                 p2 = target_street[1]
 
                 if target_street[0] == bus_stop_proj or target_street[1] == bus_stop_proj:
+
                     bus_stop_proj = (int(bus_stop_proj[0]), int(bus_stop_proj[1]))
                     self.add_bus_stop(bus_stop_proj)
                     projections.append(bus_stop_proj)
@@ -921,6 +928,7 @@ class City(Drawable):
         """
         pygame.draw.line(screen, STREET, street[0], street[1], self.STREET_WIDTH)
 
+
     def draw_highlighted_street(self, street: tuple[tuple, tuple], screen: pygame.Surface,
                                 Colour: tuple) -> None:
         """
@@ -930,3 +938,4 @@ class City(Drawable):
             - street in self._streets
         """
         pygame.draw.line(screen, Colour, street[0], street[1], self.STREET_WIDTH)
+

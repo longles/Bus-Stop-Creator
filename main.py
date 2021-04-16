@@ -184,6 +184,7 @@ def run_visualization(map_file: str = "data/map.txt",
                         else:
                             counter = 1
                             city.change_inertia(temp_inertia)
+                            
                         safety_counter += 1
                         if safety_counter == 100:
                             break
@@ -207,7 +208,7 @@ def run_visualization(map_file: str = "data/map.txt",
                             for i in range(len(p)):
                                 if i != len(p) - 1:
                                     city.draw_highlighted_street((p[i], p[i + 1]), screen,
-                                                                 color)
+                                                                 color)           
 
                 if event.key == pygame.K_s and ctrl_down:  # Ctrl + s to save the city
                     city.export_to_file(map_save, bus_save)
@@ -221,4 +222,12 @@ def run_visualization(map_file: str = "data/map.txt",
 
 
 if __name__ == "__main__":
+    import python_ta
+    python_ta.check_all(config={
+        'extra-imports': [],
+        'allowed-io': ['run_visualization'],
+        'max-line-length': 100,
+        'disable': ['E1136']
+    })
+
     run_visualization()
