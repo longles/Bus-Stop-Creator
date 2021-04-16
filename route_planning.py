@@ -4,19 +4,12 @@ route planning
 Assume that we auto generating a bus route system that only uses 1 type of bus, like
 the mini bus network in hong kong.
 """
+import random
+
 from graph_stuff.city_classes import *
 from graph_stuff.city_classes import _Place
 from graph_stuff.city_classes import _BusStop
 from utility_functions import *
-import copy
-import random
-
-# Constants
-fixed_cost = 45000  # Fixed cost for getting a new bus in CAD
-bus_speed = 60000  # Bus speed (meters per hour)
-total_bus_limit = 1000  # No government/company can employ infinite amount of bus
-operating_cost = 60 * 20 * 1.442  # Operating cost for keeping a vehicle running for an hour
-bus_capacity = 60  # Max number of passengers in bus
 
 
 class ComplicatedPlace(_Place):
@@ -156,10 +149,10 @@ class ModelCity(City):
                                                 * random.uniform(0.5, 0.55)))
                     else:
                         # proportion = place2.population_density / place1.population_density
-                        place_pair.set_flow(int(place1.population_density *
-                                                random.uniform(0.5, 0.55)),
-                                            int(place1.population_density *
-                                                random.uniform(0.5, 0.55)))
+                        place_pair.set_flow(int(place1.population_density
+                                                * random.uniform(0.5, 0.55)),
+                                            int(place1.population_density
+                                                * random.uniform(0.5, 0.55)))
                     self._place_pairs.append(place_pair)
 
     def bus_route_model1(self) -> None:
@@ -181,7 +174,7 @@ class ModelCity(City):
             return
         self._bus_routes = []
         self._place_pairs.sort(key=avg_flow, reverse=True)
-        bus_stops = [index for index in self._bus_stops]
+        bus_stops = list(self._bus_stops)
         potential_paths = []
         for pair in self._place_pairs:
             distance1 = []
@@ -257,12 +250,11 @@ class ModelCity(City):
         # if the repeated elements are not consecutive, cannot merge
         if consecutive_counter2 != sum(lst2_overlap) or \
                 consecutive_counter != sum(lst1_overlap):
-            print("Annie, are you okay?")
             return []
         # so now we are sure the repeated elements are consecutive
         # are the repeated elements on the edge of the list for both list though?
-        elif not((lst1_overlap[0] or lst1_overlap[-1]) and
-                 (lst2_overlap[0] or lst2_overlap[-1])):
+        elif not((lst1_overlap[0] or lst1_overlap[-1])
+                 and (lst2_overlap[0] or lst2_overlap[-1])):
             # the repeated elements are not on the edge of the list for both list
             # then test for if a list is completely part of the other list
             if lst1_overlap[0] and lst1_overlap[-1]:
@@ -271,7 +263,6 @@ class ModelCity(City):
                 return lst1
             # if not, return []
             else:
-                print("billie jean is not my lover")
                 return []
         # so the repeated elements are on the edge of the list for both lists
         else:
@@ -292,7 +283,6 @@ class ModelCity(City):
                     lst2.pop(0)
                 return lst1 + lst2
             else:
-                print("So beat it, but you wanna be bad")
                 return []
 
     def analyse_street(self) -> None:

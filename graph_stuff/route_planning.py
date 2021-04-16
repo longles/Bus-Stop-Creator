@@ -174,7 +174,8 @@ class ModelCity(City):
         City.generate_city("centered")
         City.bus_route_model1()
 
-        City.merge_route([(691, 477), (609, 273), (544, 250), (437, 256), (381, 195), (246, 226)], [(381, 195), (246, 226)])
+        City.merge_route([(691, 477), (609, 273), (544, 250), (437, 256), (381, 195), (246, 226)],
+        [(381, 195), (246, 226)])
         """
         if self._bus_stops == dict():
             return

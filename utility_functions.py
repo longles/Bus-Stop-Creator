@@ -14,34 +14,6 @@ import numpy as np
 # General mathematics
 # ========================================================
 
-def calc_inertia(place_coords: list, centers: list) -> float:
-    """
-    Inertia is the within-cluster sum-of-squares.
-    It is a measure of how far 'every point in a cluster' is from the center (another point)
-
-    Since the the centers of clusters calculated in _get_bus_stops() are being projected onto
-    streets (forming the projected centers), a new inertia has to be calculated for
-    the new projected centers
-
-    - place_coords is a list of the coordinates of the places in self._places
-    - centers is a list of the centers of the len(centers) clusters
-
-    Read this for more info:
-    https://scikit-learn.org/stable/modules/clustering.html#k-means
-
-    Preconditions:
-        - all(0 <= center[0] <= WIDTH for center in centers)
-        - all(0 <= center[1] <= HEIGHT for center in centers)
-    """
-    inertia = 0.0
-    for e in range(len(place_coords)):
-        distances = []
-        for i in range(len(centers)):
-            distances.append(distance(tuple(place_coords[e]), centers[i]))
-        inertia += min(distances) ** 2
-    return inertia
-
-
 def local_max(lst: list) -> list:
     """
     Preconditions:
@@ -92,55 +64,6 @@ def diagonal(pos1: tuple[float, float], pos2: tuple[float, float]) -> float:
     """Return the largest difference in coordinates
     """
     return max(abs(pos1[0] - pos2[0]), abs(pos1[1] - pos2[1]))
-
-
-# ========================================================
-# Maps and geography
-# ========================================================
-
-def lat_long_to_coord(latitude: float, longtitude: float, central_meridian: float) -> tuple:
-    """
-    Use Mercator projection to transform longitude latitude to coordinates
-    read https://en.wikipedia.org/wiki/Mercator_projection#Derivation_of_the_Mercator_projection
-    for more info
-    "the Mercator projection inflates the size of objects away from the equator."
-
-    Preconditions:
-        - central meridian is the closest meridian to the center of the map
-
-    Notice that difference is returned because values are lost through performing math.tan()
-    If you want to perform coord_to_long_lat(), you must return difference, otherwise you don't
-    need to.
-
-    testing
-    coord = lat_long_to_coord(43.786370, -79.463070, 0.0)
-    x = coord[0]
-    y = coord[1]
-    difference = coord[2]
-    """
-    earth_radius = 6371000  # meters
-    x = earth_radius * (longtitude - central_meridian)
-    y = earth_radius * math.log(math.tan(math.pi / 4 + latitude / 2), math.e)
-    difference = int((math.pi / 4 + latitude / 2) / math.pi)
-
-    return int(x), int(y), difference
-
-
-def coord_to_long_lat(x: int, y: int, central_meridian: float, difference: int) -> tuple:
-    """
-    Transform Mercator projected coordinates back to longitude latitude
-    read https://en.wikipedia.org/wiki/Mercator_projection#Derivation_of_the_Mercator_projection
-    for more info
-    "the Mercator projection inflates the size of objects away from the equator."
-
-    testing
-    coord_to_long_lat(x, y, 0.0, difference)
-    """
-    earth_radius = 6371000  # meters
-    longitude = x / earth_radius + central_meridian
-    latitude = 2 * (math.atan(math.e ** (y / earth_radius)) + difference * math.pi - math.pi / 4)
-
-    return (latitude, longitude)
 
 
 if __name__ == '__main__':
