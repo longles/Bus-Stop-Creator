@@ -195,7 +195,7 @@ def run_visualization(map_file: str = "data/map.txt",
                     # get the bus routes!
                     complicated_city = ModelCity(city)
                     complicated_city.generate_city("centered")
-                    complicated_city.bus_route_model1()
+                    complicated_city.bus_route_model()
                     bus_routes = complicated_city.return_bus_routes()
                     for r in bus_routes:
                         city.add_bus_route(r)
