@@ -12,8 +12,8 @@ Copyright (c) 2021 Andy Wang, Varun Pillai, Ling Ai, Daniel Liu
 """
 import random
 
-from city import *
-from place import _Place, _BusStop
+from backend.city import *
+from backend.place import _Place, _BusStop
 from utils.utility_functions import *
 
 
@@ -307,16 +307,3 @@ class ModelCity(City):
                 return lst1 + lst2
             else:
                 return []
-
-
-if __name__ == '__main__':
-    import python_ta.contracts
-    python_ta.contracts.check_all_contracts()
-
-    import python_ta
-    python_ta.check_all(config={
-        'extra-imports': ['graph_stuff.city_classes', 'utility_functions', 'copy', 'random'],
-        'allowed-io': [],
-        'max-line-length': 100,
-        'disable': ['E1136']
-    })

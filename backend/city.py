@@ -910,17 +910,3 @@ class City(Drawable):
             - street in self._streets
         """
         pygame.draw.line(screen, colour, street[0], street[1], self.STREET_WIDTH)
-
-
-if __name__ == '__main__':
-    import python_ta.contracts
-    python_ta.contracts.check_all_contracts()
-
-    import python_ta
-    python_ta.check_all(config={
-        'extra-imports': ['pygame', 'random', 'pandas', 'copy', 'sklearn.cluster',
-                          'pygame_stuff.drawing', 'utility_functions'],
-        'allowed-io': ['build_from_file', 'export_to_file'],
-        'max-line-length': 100,
-        'disable': ['E1136']
-    })
