@@ -11,7 +11,7 @@ city = City.build_from_file("data/map.txt", "data/bus.txt")
 city.shortest_path((437,256), (609,273))
 """
 # import pygame
-from graph_stuff.route_planning import *
+from backend.route import *
 
 WIDTH, HEIGHT = 1000, 800
 

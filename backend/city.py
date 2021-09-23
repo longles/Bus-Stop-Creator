@@ -1,12 +1,10 @@
 """ CSC111 Final Project: Bus Stop Creator
-city_classes.py
+city.py
 
 ================================================================================
 This file contains the class definitions for the objects needed to represent
 a city.
   - City
-  - Place
-  - _Intersection
 ================================================================================
 Copyright (c) 2021 Andy Wang, Varun Pillai, Ling Ai, Daniel Liu
 
@@ -18,12 +16,11 @@ from __future__ import annotations
 from typing import Union
 
 import copy
-import pygame
 import pandas as pd
 
 from sklearn.cluster import KMeans
-from pygame_stuff.drawing import *
-from utility_functions import *
+from visual.drawing import *
+from utils.utility_functions import *
 
 
 class _Place(Drawable):

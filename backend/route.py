@@ -1,12 +1,20 @@
-"""
-route planning
+""" CSC111 Final Project: Bus Stop Creator
+route.py
+
+================================================================================
+This file contains the class definitions for the objects needed to represent
+a city.
+  - ComplicatedPlace
+  - PlacePair
+  - ModelCity
+================================================================================
+Copyright (c) 2021 Andy Wang, Varun Pillai, Ling Ai, Daniel Liu
 """
 import random
 
-from graph_stuff.city_classes import *
-from graph_stuff.city_classes import _Place
-from graph_stuff.city_classes import _BusStop
-from utility_functions import *
+from city import *
+from place import _Place, _BusStop
+from utils.utility_functions import *
 
 
 class ComplicatedPlace(_Place):
@@ -33,7 +41,7 @@ class ComplicatedPlace(_Place):
 
     def set_density(self, density: int) -> None:
         """
-        set the population density
+        Set the population density
         """
         self.population_density = density
 
@@ -66,7 +74,7 @@ class PlacePair:
 
 def avg_flow(pair: PlacePair) -> int:
     """
-    return the average path flow of a PlacePair
+    Return the average path flow of a PlacePair
     """
     return int((pair.path1flow + pair.path2flow) / 2)
 
@@ -104,24 +112,24 @@ class ModelCity(City):
 
     def return_bus_routes(self) -> list:
         """
-        return the bus routes
+        Return the bus routes
         """
         return self._bus_routes
 
     def generate_city(self, city_type: str) -> None:
         """
-        generate a city of city_type for testing
+        Generate a city of city_type for testing
 
         city_type == "centered":
-        made sure several places in this city has a high population density (city centers)
+        Made sure several places in this city has a high population density (city centers)
 
         city_type == "distributed":
-        randomly assign places with population densities
+        Randomly assign places with population densities
 
         Two model rules are considered for the model generation:
         1. take a pair of places A and B, the flow from A to B and B to A should be similar
         in a city (people who go work/play in another place will return)
-        2. flow to densed areas should be partly proportional to the population of the high density
+        2. flow to dense areas should be partly proportional to the population of the high density
         area (city centers and high density places attracts more people).
 
 
@@ -169,10 +177,8 @@ class ModelCity(City):
                                                 * random.uniform(0.5, 0.55)))
                     self._place_pairs.append(place_pair)
 
-    def bus_route_model1(self) -> None:
+    def bus_route_model(self) -> None:
         """
-        model 1 of trying to generate bus routes
-
         The strategy is to pickout candidate bus routes that values high demand of consumers
         (prioritizes path flow) and merge those bus routes together, with the merge leaving
         the original bus routes as intact as possible.
