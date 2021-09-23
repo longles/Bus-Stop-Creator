@@ -219,3 +219,7 @@ def run_visualization(map_file: str = "data/map.txt",
         pygame.display.flip()
 
     pygame.display.quit()
+
+
+if __name__ == "__main__":
+    run_visualization()
